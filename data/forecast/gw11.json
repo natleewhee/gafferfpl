@@ -94,7 +94,7 @@
   "deadlineTime": "2026-11-21T11:00:00Z",
   "earlySeason": false,
   "effectiveGap": 5.0,
-  "generatedAt": "2026-11-15T10:34:07.615770+00:00",
+  "generatedAt": "2026-11-16T10:50:37.148392+00:00",
   "history": {
     "gameweeks": [
       {
@@ -3506,7 +3506,7 @@
         0,
         10
       ],
-      "selectedByPercent": 3.6,
+      "selectedByPercent": 3.7,
       "sellPrice": 5.4,
       "team": "AVL",
       "total": 28.81,
@@ -4584,7 +4584,7 @@
         9,
         11
       ],
-      "selectedByPercent": 31.4,
+      "selectedByPercent": 31.5,
       "sellPrice": 7.1,
       "team": "AVL",
       "total": 31.21,
@@ -4875,7 +4875,7 @@
         1,
         0
       ],
-      "selectedByPercent": 3.1,
+      "selectedByPercent": 3.2,
       "sellPrice": 5.0,
       "team": "AVL",
       "total": 25.12,
@@ -5748,7 +5748,7 @@
         null,
         null
       ],
-      "selectedByPercent": 3.4,
+      "selectedByPercent": 3.3,
       "sellPrice": 4.0,
       "team": "BOU",
       "total": 0.4,
@@ -7700,7 +7700,7 @@
         9,
         9
       ],
-      "selectedByPercent": 23.9,
+      "selectedByPercent": 24.0,
       "sellPrice": 6.5,
       "team": "BOU",
       "total": 35.73,
@@ -15684,7 +15684,7 @@
         3,
         3
       ],
-      "selectedByPercent": 1.0,
+      "selectedByPercent": 1.1,
       "sellPrice": 5.3,
       "team": "CHE",
       "total": 21.87,
@@ -15975,7 +15975,7 @@
         null,
         null
       ],
-      "selectedByPercent": 31.5,
+      "selectedByPercent": 31.4,
       "sellPrice": 7.6,
       "team": "CHE",
       "total": 10.66,
@@ -19459,7 +19459,7 @@
         0.75
       ],
       "position": "MID",
-      "price": 5.3,
+      "price": 5.2,
       "recentPoints": [
         null,
         1,
@@ -19468,7 +19468,7 @@
         1
       ],
       "selectedByPercent": 0.1,
-      "sellPrice": 5.3,
+      "sellPrice": 5.2,
       "team": "COV",
       "total": 5.23,
       "webName": "Hamer"
@@ -21150,7 +21150,7 @@
         1,
         null
       ],
-      "selectedByPercent": 5.6,
+      "selectedByPercent": 5.5,
       "sellPrice": 4.3,
       "team": "CRY",
       "total": 4.78,
@@ -29606,7 +29606,7 @@
         1,
         6
       ],
-      "selectedByPercent": 13.5,
+      "selectedByPercent": 13.4,
       "sellPrice": 4.7,
       "team": "HUL",
       "total": 24.58,
@@ -36499,7 +36499,7 @@
         1,
         4
       ],
-      "selectedByPercent": 14.8,
+      "selectedByPercent": 14.7,
       "sellPrice": 6.4,
       "team": "LIV",
       "total": 26.71,
@@ -37960,7 +37960,7 @@
         1,
         9
       ],
-      "selectedByPercent": 1.3,
+      "selectedByPercent": 1.4,
       "sellPrice": 5.4,
       "team": "LIV",
       "total": 28.12,
@@ -38445,7 +38445,7 @@
         2,
         8
       ],
-      "selectedByPercent": 25.1,
+      "selectedByPercent": 25.2,
       "sellPrice": 9.3,
       "team": "LIV",
       "total": 35.09,
@@ -39512,7 +39512,7 @@
         null,
         0
       ],
-      "selectedByPercent": 14.0,
+      "selectedByPercent": 13.9,
       "sellPrice": 6.0,
       "team": "MCI",
       "total": 14.15,
@@ -39803,7 +39803,7 @@
         2,
         0
       ],
-      "selectedByPercent": 22.5,
+      "selectedByPercent": 22.4,
       "sellPrice": 5.6,
       "team": "MCI",
       "total": 17.87,
@@ -47472,7 +47472,7 @@
         0,
         2
       ],
-      "selectedByPercent": 4.2,
+      "selectedByPercent": 4.1,
       "sellPrice": 5.2,
       "team": "NFO",
       "total": 21.44,
@@ -48539,7 +48539,7 @@
         2,
         5
       ],
-      "selectedByPercent": 9.3,
+      "selectedByPercent": 9.2,
       "sellPrice": 7.8,
       "team": "NFO",
       "total": 23.86,
@@ -49426,20 +49426,20 @@
     },
     {
       "availability": {
-        "chance": null,
-        "news": null,
+        "chance": 75,
+        "news": "Thigh injury - 75% chance of playing",
         "risks": [],
-        "status": "a"
+        "status": "d"
       },
       "code": 204561,
       "components": {
-        "appearance": 1.8,
-        "assists": 0.09,
-        "bonus": 0.03,
-        "cards": -0.06,
-        "cleanSheet": 0.15,
-        "defensiveContribution": 0.19,
-        "goals": 0.13,
+        "appearance": 1.35,
+        "assists": 0.07,
+        "bonus": 0.02,
+        "cards": -0.05,
+        "cleanSheet": 0.11,
+        "defensiveContribution": 0.14,
+        "goals": 0.1,
         "goalsConceded": 0.0,
         "saves": 0.0
       },
@@ -49498,7 +49498,7 @@
         ]
       ],
       "perGameweek": [
-        2.33,
+        1.75,
         2.37,
         2.34,
         2.37,
@@ -49518,7 +49518,7 @@
       "selectedByPercent": 0.1,
       "sellPrice": 5.0,
       "team": "NFO",
-      "total": 16.57,
+      "total": 15.99,
       "webName": "Schlager"
     },
     {
@@ -62847,10 +62847,10 @@
         "price": 4.7,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 31,
+          "hourlyRate": 43,
           "likelihood": 1,
-          "netTransfers": 36458,
-          "percent": 1.2
+          "netTransfers": 37185,
+          "percent": 1.4
         },
         "projectedPoints": 3.6,
         "provisional": false,
@@ -62932,10 +62932,10 @@
         "price": 5.9,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 12,
+          "hourlyRate": 4,
           "likelihood": 1,
-          "netTransfers": 35412,
-          "percent": 6.3
+          "netTransfers": 35596,
+          "percent": 6.6
         },
         "projectedPoints": 3.61,
         "provisional": false,
@@ -63017,10 +63017,10 @@
         "price": 4.9,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 86,
+          "hourlyRate": 180,
           "likelihood": 1,
-          "netTransfers": 135686,
-          "percent": 0.2
+          "netTransfers": 139477,
+          "percent": 1.1
         },
         "projectedPoints": 4.63,
         "provisional": false,
@@ -63102,10 +63102,10 @@
         "price": 5.5,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 146,
+          "hourlyRate": 254,
           "likelihood": 1,
-          "netTransfers": 154526,
-          "percent": 16.8
+          "netTransfers": 159287,
+          "percent": 18.1
         },
         "projectedPoints": 4.1,
         "provisional": false,
@@ -63187,10 +63187,10 @@
         "price": 5.1,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 154,
+          "hourlyRate": 299,
           "likelihood": 1,
-          "netTransfers": 181761,
-          "percent": 15.3
+          "netTransfers": 186422,
+          "percent": 16.5
         },
         "projectedPoints": 4.86,
         "provisional": false,
@@ -63272,10 +63272,10 @@
         "price": 9.8,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": -11,
+          "hourlyRate": -5,
           "likelihood": 3,
-          "netTransfers": -13070,
-          "percent": 47.1
+          "netTransfers": -13426,
+          "percent": 47.4
         },
         "projectedPoints": 4.68,
         "provisional": false,
@@ -63357,10 +63357,10 @@
         "price": 8.2,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 62,
+          "hourlyRate": 78,
           "likelihood": 3,
-          "netTransfers": 39751,
-          "percent": 52.7
+          "netTransfers": 41300,
+          "percent": 54.1
         },
         "projectedPoints": 4.34,
         "provisional": false,
@@ -63448,10 +63448,10 @@
         "price": 6.7,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 123,
-          "likelihood": 1,
-          "netTransfers": 110901,
-          "percent": 18.8
+          "hourlyRate": 166,
+          "likelihood": 2,
+          "netTransfers": 114359,
+          "percent": 19.8
         },
         "projectedPoints": 5.15,
         "provisional": false,
@@ -63539,10 +63539,10 @@
         "price": 6.3,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 86,
+          "hourlyRate": 169,
           "likelihood": 2,
-          "netTransfers": 103099,
-          "percent": 25.4
+          "netTransfers": 106368,
+          "percent": 26.4
         },
         "projectedPoints": 4.57,
         "provisional": false,
@@ -63624,10 +63624,10 @@
         "price": 7.1,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 372,
+          "hourlyRate": 515,
           "likelihood": 3,
-          "netTransfers": 323969,
-          "percent": 71.3
+          "netTransfers": 333633,
+          "percent": 74.4
         },
         "projectedPoints": 4.49,
         "provisional": false,
@@ -63709,9 +63709,9 @@
         "price": 15.8,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": -17,
+          "hourlyRate": -3,
           "likelihood": 1,
-          "netTransfers": -27153,
+          "netTransfers": -27352,
           "percent": 16.6
         },
         "projectedPoints": 6.99,
@@ -63794,10 +63794,10 @@
         "price": 4.4,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 15,
+          "hourlyRate": 21,
           "likelihood": 2,
-          "netTransfers": 13597,
-          "percent": 36.0
+          "netTransfers": 13964,
+          "percent": 36.5
         },
         "projectedPoints": 3.32,
         "provisional": false,
@@ -63879,10 +63879,10 @@
         "price": 5.5,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": -25,
+          "hourlyRate": -27,
           "likelihood": -3,
-          "netTransfers": -21650,
-          "percent": -66.5
+          "netTransfers": -22179,
+          "percent": -68.4
         },
         "projectedPoints": 2.91,
         "provisional": false,
@@ -63964,10 +63964,10 @@
         "price": 5.9,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": -36,
+          "hourlyRate": -38,
           "likelihood": -3,
-          "netTransfers": -24869,
-          "percent": -87.8
+          "netTransfers": -25590,
+          "percent": -90.2
         },
         "projectedPoints": 3.04,
         "provisional": true,
@@ -64049,10 +64049,10 @@
         "price": 5.1,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 26,
+          "hourlyRate": 38,
           "likelihood": 2,
-          "netTransfers": 31945,
-          "percent": 23.0
+          "netTransfers": 32821,
+          "percent": 23.7
         },
         "projectedPoints": 3.13,
         "provisional": true,
