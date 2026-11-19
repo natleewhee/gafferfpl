@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { LOCKED_BODY, isOwnerRequest } from "@/lib/ownerAuth";
-import { sameTransfer, type PendingTransfer } from "@/lib/transfers";
+import { liveTransfers, sameTransfer, type PendingTransfer } from "@/lib/transfers";
 import { dispatchRebuild } from "@/lib/rebuildDispatch";
 import { REPO_BRANCH, REPO_NAME, REPO_OWNER } from "@/lib/repo";
 
@@ -68,6 +68,8 @@ export async function POST(req: NextRequest) {
     const inId = Number(body.inId);
     const basedOnGw = Number(body.basedOnGw);
     const note = typeof body.note === "string" ? body.note.slice(0, 200) : undefined;
+    // the forecast's overridesCutoff: transfers saved before it were plans for a week now locked
+    const cutoff = typeof body.cutoff === "string" && Number.isFinite(Date.parse(body.cutoff)) ? body.cutoff : null;
 
     if (!Number.isFinite(outId) || !Number.isFinite(inId) || !Number.isFinite(basedOnGw)) {
       return NextResponse.json({ error: "outId, inId and basedOnGw are required numbers" }, { status: 400 });
@@ -75,8 +77,8 @@ export async function POST(req: NextRequest) {
 
     const { sha, data } = await getCurrentFile();
     const isStale = !data || data.basedOnGw !== basedOnGw;
-    const transfers: PendingTransfer[] = isStale ? [] : [...data.transfers];
-    const incoming: PendingTransfer = { out: outId, in: inId, ...(note ? { note } : {}) };
+    const transfers: PendingTransfer[] = isStale ? [] : liveTransfers(data.transfers, cutoff);
+    const incoming: PendingTransfer = { out: outId, in: inId, ...(note ? { note } : {}), savedAt: new Date().toISOString() };
     // a repeated click (or a retry) of the same swap must not write a second copy
     if (transfers.some((t) => sameTransfer(t, incoming))) {
       return NextResponse.json({

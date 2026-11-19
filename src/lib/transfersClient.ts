@@ -54,8 +54,8 @@ async function call(method: "POST" | "DELETE", body: unknown): Promise<TransferR
   };
 }
 
-export const saveTransfer = (outId: number, inId: number, basedOnGw: number, note = "") =>
-  call("POST", { outId, inId, basedOnGw, note });
+export const saveTransfer = (outId: number, inId: number, basedOnGw: number, note = "", cutoff: string | null = null) =>
+  call("POST", { outId, inId, basedOnGw, note, cutoff });
 
 export const removeTransfer = (outId: number, inId: number) => call("DELETE", { outId, inId });
 

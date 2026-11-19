@@ -200,3 +200,14 @@ def test_prior_season_saves_reach_a_keepers_rates():
     without = _rate_features([keeper, *others], [], {}, {})
 
     assert with_prior[9]["saves90"] > without[9]["saves90"]
+
+
+def test_the_committed_archive_joins_on_the_right_column():
+    # The guard against a wrong-column join, run on the real data: if the entity resolution
+    # and the history archive stop lining up, most players would silently read as cold-start.
+    archive = load_history(DATA_DIR)
+    resolved = json.loads(
+        Path(sorted(glob.glob(str(DATA_DIR / "entity-resolution" / "*.json")))[-1]).read_text()
+    )["resolved"]
+
+    assert assert_match_rate(resolved, archive.frame) >= 0.6

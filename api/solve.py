@@ -8,14 +8,10 @@ precomputed for every possible player, so this is the one on-demand solve.
 Reads the already-committed ``data/forecast/gw<N>.json`` for its pool/squad
 (the same data ``scripts/compute_forecast.py`` bakes the precomputed
 scenarios from) rather than recomputing the xP model -- this endpoint only
-ever re-runs the ILP, never the model. It reimplements the small
-``_scenario_to_dict``/``_player_ref``/``_scenario_weeks`` shaping helpers
-from ``scripts/compute_forecast.py`` rather than importing that module,
-specifically to avoid pulling pandas/numpy (which the ``engine`` package's
-model code depends on transitively) into this lambda -- ``engine.optimise``
-itself only needs ``pulp``, so that's the only third-party dependency this
-function bundles. Keep these helpers in sync with compute_forecast.py's by
-hand if that shape changes; tests/test_solve_api.py pins the contract.
+ever re-runs the ILP, never the model. The JSON shaping comes from
+``engine/scenario_shape.py``, shared with ``scripts/compute_forecast.py``; it
+imports only ``engine.optimise`` (``pulp``), so pandas/numpy stay out of this
+lambda. tests/test_solve_api.py pins the contract.
 
 A guest page sends ``team`` (its own squad, sell prices, bank and free
 transfers); without it the solve uses the owner's committed squad.
@@ -38,73 +34,10 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from engine.optimise import ScenarioResult, solve_squad, with_held_rows  # noqa: E402
+from engine.optimise import solve_squad, with_held_rows  # noqa: E402
+from engine.scenario_shape import scenario_to_dict as _scenario_to_dict  # noqa: E402
 
 MAX_FORCED_PLAYERS = 15  # can't force in/out more than a full squad
-
-
-def _player_ref(pid: int, pool_by_id: dict) -> dict:
-    p = pool_by_id.get(pid, {})
-    return {
-        "id": pid,
-        "webName": p.get("webName"),
-        "position": p.get("position"),
-        "team": p.get("team"),
-        "price": p.get("price"),
-        "availability": p.get("availability"),
-    }
-
-
-def _scenario_weeks(result: ScenarioResult, pool_by_id: dict, target_gw: int) -> list[dict]:
-    weeks = []
-    for offset in range(result.horizon_gws):
-        xi_ids = result.xi_by_gw[offset] if offset < len(result.xi_by_gw) else []
-        captain_id = result.captain_by_gw[offset] if offset < len(result.captain_by_gw) else None
-        players = []
-        total = 0.0
-        for pid in xi_ids:
-            p = pool_by_id.get(pid, {})
-            per_gw = p.get("perGameweek") or []
-            xp = per_gw[offset] if offset < len(per_gw) else None
-            opponents_by_gw = p.get("opponents") or []
-            opponents = opponents_by_gw[offset] if offset < len(opponents_by_gw) else []
-            is_captain = pid == captain_id
-            players.append(
-                {
-                    "id": pid,
-                    "webName": p.get("webName"),
-                    "position": p.get("position"),
-                    "team": p.get("team"),
-                    "xp": xp,
-                    "opponents": opponents,
-                    "isCaptain": is_captain,
-                }
-            )
-            if xp is not None:
-                total += xp * (2 if is_captain else 1)
-        weeks.append(
-            {
-                "targetGw": target_gw + offset,
-                "players": players,
-                "totalXp": round(total, 2),
-            }
-        )
-    return weeks
-
-
-def _scenario_to_dict(result: ScenarioResult, pool_by_id: dict, target_gw: int) -> dict:
-    return {
-        "squad": result.squad_ids,
-        "xiByGw": result.xi_by_gw,
-        "captainByGw": result.captain_by_gw,
-        "horizonGws": result.horizon_gws,
-        "points": result.points,
-        "hitCost": result.hit_cost,
-        "netPoints": result.net_points,
-        "transfersIn": [_player_ref(pid, pool_by_id) for pid in result.transfers_in],
-        "transfersOut": [_player_ref(pid, pool_by_id) for pid in result.transfers_out],
-        "weeks": _scenario_weeks(result, pool_by_id, target_gw),
-    }
 
 
 def _load_forecast(gw: int) -> dict:

@@ -9,7 +9,6 @@ import {
   WALL_PER_COURSE,
   GLIDE_SECONDS,
   SWEEP_FROM,
-  benchCheerPose,
   blend,
   cleanSheetPose,
   clamp01,
@@ -28,7 +27,7 @@ import { buildStadium, lowPowerDevice } from "./stadium";
 import { ballShadow, sharedPitchCanvas, sharedShadowCanvas, sharedSkyCanvas } from "./look";
 
 /* The 3D Squad pitch: stylised low-poly figures in kit colours on a floodlit
- * pitch, with the bench seated in a dugout at the side. Built from rounded
+ * pitch (the subs are a strip under it, not figures). Built from rounded
  * shapes in code (no model files), each figure merged into a handful of
  * meshes with baked vertex colours.
  *
@@ -49,7 +48,6 @@ export type FigureDef = {
   hair: [HairStyle, string];
   captain: boolean;
   vice?: boolean;
-  bench: boolean; // a seated figure; unused while the subs are a strip under the pitch
   dim?: number; // 0..1, fades players who have not played or are off
   goals?: number; // goals scored: he celebrates when tapped
   cleanSheet?: boolean; // clean sheet: he builds the brick wall when tapped
@@ -244,8 +242,8 @@ function buildFigure(def: FigureDef, shadowTex: THREE.Texture): Figure {
     const piv = new THREE.Group();
     piv.position.set(side * 0.58, 1.95, 0);
     piv.add(new THREE.Mesh(armGeo(def.captain && side === -1), mat));
-    // standing: arms hang a little away from the body; seated: hands on knees
-    piv.rotation.set(def.bench ? -0.7 : 0, 0, side * (def.bench ? 0.12 : 0.08));
+    // standing: arms hang a little away from the body
+    piv.rotation.set(0, 0, side * 0.08);
     b.add(piv);
     arms.push(piv);
 
@@ -256,15 +254,10 @@ function buildFigure(def: FigureDef, shadowTex: THREE.Texture): Figure {
     knee.position.set(0, -0.44, 0);
     knee.add(new THREE.Mesh(shin, mat));
     hip.add(knee);
-    if (def.bench) {
-      hip.rotation.x = -1.5;
-      knee.rotation.x = 1.5;
-    }
     b.add(hip);
     hips.push(hip);
     knees.push(knee);
   }
-  if (def.bench) b.position.y = -0.43;
 
   // a soft shadow, pushed a little away from the main floodlight (high, front right)
   const blob = new THREE.Mesh(
@@ -275,7 +268,6 @@ function buildFigure(def: FigureDef, shadowTex: THREE.Texture): Figure {
   blob.rotation.x = -Math.PI / 2;
   blob.position.set(-0.14, 0.03, -0.2);
   blob.scale.set(1.1, 1, 1);
-  blob.visible = !def.bench;
   g.add(blob);
   const ring = new THREE.Mesh(new THREE.RingGeometry(1.15, 1.32, 36), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
   ring.rotation.x = -Math.PI / 2;
@@ -284,13 +276,13 @@ function buildFigure(def: FigureDef, shadowTex: THREE.Texture): Figure {
   g.add(ring);
 
   const hit = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 3, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
-  hit.position.y = def.bench ? 1.2 : 1.5;
+  hit.position.y = 1.5;
   hit.userData.id = def.id;
   g.add(hit);
 
   // the armband on the grass: a gold ring under the captain, a thinner silver one under the vice
   let band: THREE.Mesh | null = null;
-  if ((def.captain || def.vice) && !def.bench) {
+  if (def.captain || def.vice) {
     band = new THREE.Mesh(
       def.captain ? new THREE.RingGeometry(1.0, 1.16, 40) : new THREE.RingGeometry(1.02, 1.1, 40),
       new THREE.MeshBasicMaterial({ color: def.captain ? 0xf3b94d : 0xc9d3dc, transparent: true, opacity: def.captain ? 0.7 : 0.45, depthWrite: false, side: THREE.DoubleSide }),
@@ -547,12 +539,11 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
     if (ball) ball.visible = false;
     syncBallShade();
     for (const f of figures) {
-      if (f.def.bench) continue;
       f.anim.yaw = 0;
       if (!f.anim.current && !f.anim.slide) f.g.rotation.y = 0;
     }
   }
-  const xi = () => figures.filter((f) => !f.def.bench && !f.def.sentOff && !f.anim.slide && f.anim.pop == null);
+  const xi = () => figures.filter((f) => !f.def.sentOff && !f.anim.slide && f.anim.pop == null);
   /** `wait` is extra time he keeps the ball before the wind-up (a receiver may hold it a moment first);
    * `rest` is where the ball is when he starts. */
   function startPass(from: Figure, last: number | null, wait = 0, rest: { x: number; z: number } | null = null): boolean {
@@ -644,7 +635,7 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
     // he who has the ball looks at the man he is passing to; the receiver watches it come
     const now = pass ?? cur;
     for (const f of figures) {
-      if (f.def.bench || f.anim.current || f.anim.slide) continue;
+      if (f.anim.current || f.anim.slide) continue;
       let want = 0;
       if (f === now.from) want = facing(spotOf(f), spotOf(now.to));
       else if (f === now.to && now.phase === "fly") want = facing(spotOf(f), { x: b.position.x, z: b.position.z });
@@ -705,21 +696,17 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
   const brickEuler = new THREE.Euler();
   const brickOne = new THREE.Vector3(1, 1, 1);
 
-  /** Put a figure's joints in a pose, on top of its resting pose (standing or seated). */
+  /** Put a figure's joints in a pose, on top of its standing pose (arms a little out). */
   function applyPose(f: Figure, pose: Pose) {
     const j = f.joints;
-    const seated = f.def.bench;
-    j.body.position.y = (seated ? -0.43 : 0) + pose.bodyY;
+    j.body.position.y = pose.bodyY;
     j.body.rotation.x = pose.bodyRx;
-    const standArm = (side: number) => ({ x: seated ? -0.7 : 0, z: side * (seated ? 0.12 : 0.08) });
-    const L = standArm(-1);
-    const R = standArm(1);
-    j.armL.rotation.set(L.x + pose.armL.x, 0, L.z + pose.armL.z);
-    j.armR.rotation.set(R.x + pose.armR.x, 0, R.z + pose.armR.z);
-    j.hipL.rotation.set((seated ? -1.5 : 0) + pose.hipL.x, 0, pose.hipL.z);
-    j.hipR.rotation.set((seated ? -1.5 : 0) + pose.hipR.x, 0, pose.hipR.z);
-    j.kneeL.rotation.x = (seated ? 1.5 : 0) + pose.kneeLx;
-    j.kneeR.rotation.x = (seated ? 1.5 : 0) + pose.kneeRx;
+    j.armL.rotation.set(pose.armL.x, 0, -0.08 + pose.armL.z);
+    j.armR.rotation.set(pose.armR.x, 0, 0.08 + pose.armR.z);
+    j.hipL.rotation.set(pose.hipL.x, 0, pose.hipL.z);
+    j.hipR.rotation.set(pose.hipR.x, 0, pose.hipR.z);
+    j.kneeL.rotation.x = pose.kneeLx;
+    j.kneeR.rotation.x = pose.kneeRx;
     f.g.position.set(f.homeX, 0.05, f.homeZ + pose.dz);
     f.g.rotation.y = pose.yaw;
     if (f.wall) {
@@ -804,7 +791,7 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
           const head = Math.atan2(f.homeX - a.slide.fromX, f.homeZ - a.slide.fromZ);
           f.g.rotation.y = head * Math.min(1, (1 - k) * 4);
         }
-        if (moving && !f.def.bench) {
+        if (moving) {
           j.hipL.rotation.x = Math.sin(phase) * stride;
           j.hipR.rotation.x = -Math.sin(phase) * stride;
           j.kneeL.rotation.x = Math.max(0, Math.cos(phase)) * stride * 1.15;
@@ -821,14 +808,14 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
             j.body.rotation.x = 0;
           }
           a.slide = null;
-          if (!a.current) restPose(f); // back to standing or seated, as he was built
+          if (!a.current) restPose(f); // back to standing
           f.g.position.set(f.homeX, 0.05, f.homeZ);
         } else active = true;
       }
       if (a.current) {
         const cur = a.current;
         cur.t += dt;
-        const len = momentSeconds(cur.kind, f.def.bench);
+        const len = momentSeconds(cur.kind);
         if (cur.t < 0) {
           active = true; // waiting for the camera to arrive
         } else if (cur.t >= len) {
@@ -842,7 +829,7 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
             }
           }
         } else {
-          const raw = cur.kind === "goal" ? (f.def.bench ? benchCheerPose(cur.t) : goalPose(cur.t, f.def.goals ?? 1)) : cleanSheetPose(cur.t);
+          const raw = cur.kind === "goal" ? goalPose(cur.t, f.def.goals ?? 1) : cleanSheetPose(cur.t);
           // ease out of the resting pose over the first moments
           applyPose(f, blend(restingPose(), raw, clamp01(cur.t / 0.15)));
           if (raw.burst && !cur.burst) {
@@ -1099,7 +1086,7 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
       const settlingIds = settling.map((s) => ({ id: s.f.def.id, t: s.t }));
       // starters who are not in the new lineup jog off rather than vanish (not on the first draw)
       const nextIds = new Set(defs.map((d) => d.id));
-      const goers = before.size > 0 && !reduceMotion ? figures.filter((f) => !f.def.bench && !nextIds.has(f.def.id)) : [];
+      const goers = before.size > 0 && !reduceMotion ? figures.filter((f) => !nextIds.has(f.def.id)) : [];
       for (const f of goers) {
         if (pass && (pass.from === f || pass.to === f)) stopPassing();
         restPose(f);
@@ -1141,14 +1128,11 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
             f.anim.slide = { fromX: prev.x, fromZ: prev.z, t: 0, dur: 0.8 };
             f.g.position.set(prev.x, 0.05, prev.z);
           }
-        } else if (before.size > 0 && !reduceMotion && !f.def.bench) {
+        } else if (before.size > 0 && !reduceMotion) {
           // a new man in the XI runs on from the nearer touchline, level with his spot
           const fromX = sideOf(f.homeX) * TOUCHLINE;
           f.anim.slide = { fromX, fromZ: f.homeZ, t: 0, dur: Math.max(0.9, Math.abs(f.homeX - fromX) / RUN_SPEED), run: true };
           f.g.position.set(fromX, 0.05, f.homeZ);
-        } else if (before.size > 0 && !reduceMotion) {
-          f.anim.pop = 0;
-          f.g.scale.setScalar(0.001);
         }
         scene.add(f.g);
       }
@@ -1159,7 +1143,7 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
       };
       const from = saved && figures.find((x) => x.def.id === saved.fromId);
       const to = saved && figures.find((x) => x.def.id === saved.toId);
-      if (saved && from && to && same(saved.fromId) && same(saved.toId) && !from.def.bench && !to.def.bench) {
+      if (saved && from && to && same(saved.fromId) && same(saved.toId)) {
         pass = { from, to, phase: saved.phase, t: saved.t, legT: saved.legT, dur: saved.dur, last: saved.last, wait: saved.wait, rest: saved.rest };
         settling = settlingIds.flatMap((x) => {
           const f = figures.find((y) => y.def.id === x.id);
@@ -1200,7 +1184,7 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
       if (reduceMotion || selected != null || disposed) return "refused";
       if (celebrating !== null) return "busy";
       const f = figures.find((x) => x.def.id === id);
-      if (!f || f.def.bench || f.anim.current || f.anim.slide || f.anim.pop != null) return "refused";
+      if (!f || f.anim.current || f.anim.slide || f.anim.pop != null) return "refused";
       stopPassing(); // the ball is put down; he takes the moment where he stands
       f.anim.queue = [kind];
       startNext(f, 0);

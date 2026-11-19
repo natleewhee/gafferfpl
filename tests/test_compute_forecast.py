@@ -1105,3 +1105,26 @@ def test_main_still_writes_the_forecast_when_next_weeks_cache_fails(tmp_path, mo
     with pytest.raises(_Stop):
         cf.main()
     assert reached == {"built": True}
+
+
+def test_load_overrides_drops_plans_saved_before_a_passed_deadline(tmp_path, monkeypatch):
+    # GW11's deadline has passed and the forecast builds from FPL's locked GW11 squad: a transfer
+    # saved before it (or with no timestamp) was a plan for GW11 -- in the live squad if made,
+    # void if not. One saved after it is for GW12 and still applies.
+    (tmp_path / "overrides").mkdir()
+    (tmp_path / "overrides" / "transfers.json").write_text(
+        json.dumps(
+            {
+                "basedOnGw": 10,
+                "transfers": [
+                    {"out": 1, "in": 2},
+                    {"out": 3, "in": 4, "savedAt": "2026-11-21T10:59:00Z"},
+                    {"out": 5, "in": 6, "savedAt": "2026-11-21T11:30:00+00:00"},
+                ],
+            }
+        )
+    )
+    monkeypatch.setattr(cf, "DATA_DIR", tmp_path)
+
+    assert cf.load_overrides(10, "2026-11-21T11:00:00Z") == [{"out": 5, "in": 6, "savedAt": "2026-11-21T11:30:00+00:00"}]
+    assert len(cf.load_overrides(10)) == 3, "before the deadline, every saved transfer applies"

@@ -179,6 +179,9 @@ export type Forecast = {
   targetGameweek: number;
   rollingWindow: number;
   overridesApplied: number;
+  /** Set once the deadline of the week in play has passed and the forecast builds from FPL's locked
+   * squad: saved transfers from before it no longer apply (see stillApplies). */
+  overridesCutoff?: string | null;
   // targetGameweek's own deadline, feeds the deadline-day checklist.
   // Optional: absent on a forecast snapshot committed before this field
   // existed, until the next daily cron run regenerates it.

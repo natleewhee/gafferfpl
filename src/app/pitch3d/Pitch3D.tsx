@@ -45,7 +45,7 @@ const FALLBACK_KIT = { shirt: "#8a95a3", shorts: "#2b323b", socks: "#8a95a3" };
 
 /** Where everyone stands. Pure, so the layout is the same on every render. */
 function buildDefs(xi: Pitch3DPlayer[], data: PitchData): FigureDef[] {
-  const def = (p: Pitch3DPlayer, at: { x: number; z: number }, isBench: boolean): FigureDef => {
+  const def = (p: Pitch3DPlayer, at: { x: number; z: number }): FigureDef => {
     const position = (ROW_ORDER as string[]).includes(p.position) ? (p.position as Position) : "MID";
     const look = lookFor(data.looks, p.code, position);
     const club = data.kits?.[p.team];
@@ -59,7 +59,6 @@ function buildDefs(xi: Pitch3DPlayer[], data: PitchData): FigureDef[] {
       hair: look.hair,
       captain: p.role === "C",
       vice: p.role === "V",
-      bench: isBench,
       dim: p.dim,
       goals: p.goals,
       cleanSheet: p.cleanSheet,
@@ -82,7 +81,7 @@ function buildDefs(xi: Pitch3DPlayer[], data: PitchData): FigureDef[] {
     return Math.max(0, same.indexOf(p));
   };
   const out: FigureDef[] = [];
-  rows.forEach((row, r) => row.forEach((p, i) => out.push(def(p, placed[r][i], false))));
+  rows.forEach((row, r) => row.forEach((p, i) => out.push(def(p, placed[r][i]))));
   return out;
 }
 
