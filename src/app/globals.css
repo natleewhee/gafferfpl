@@ -610,3 +610,5 @@ html[data-vt-dir="back"]::view-transition-new(tabpane) { animation: vt-in-left 2
 [data-pitch-off]:focus-visible { opacity: 1; }
 /* a 3D tag waits unseen until the stage has put it over its player (not piled in the corner) */
 [data-tag-layer] > [data-tag]:not([data-placed]):not(:focus-visible) { opacity: 0; }
+/* a live goal moment: only the scorer's tag stays up */
+[data-moment] [data-tag]:not([data-star]):not(:focus-visible) { opacity: 0; transition: opacity 0.3s ease; }
