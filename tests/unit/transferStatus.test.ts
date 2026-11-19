@@ -13,13 +13,20 @@ test("a transfer the forecast was built with is in the forecast, whatever the ru
 });
 
 test("one not in it yet: rebuilding, rebuilt (reload), failed or waiting", () => {
-  const run = (status: RebuildRun["status"], finishedAt: string | null): RebuildRun => ({ status, startedAt: null, finishedAt });
-  assert.equal(transferState(t2, squad, built, run("running", null)), "rebuilding");
-  assert.equal(transferState(t2, squad, built, run("queued", null)), "rebuilding");
-  assert.equal(transferState(t2, squad, built, run("done", "2026-11-18T07:54:24Z")), "rebuilt");
-  assert.equal(transferState(t2, squad, built, run("failed", "2026-11-18T07:54:24Z")), "failed");
-  assert.equal(transferState(t2, squad, built, run("failed", "2026-11-18T07:00:00Z")), "waiting", "a failure before this forecast is old news");
+  const later = "2026-11-18T07:52:43Z"; // started after this forecast was built
+  const run = (status: RebuildRun["status"], startedAt: string | null, finishedAt: string | null): RebuildRun => ({ status, startedAt, finishedAt });
+  assert.equal(transferState(t2, squad, built, run("running", later, null)), "rebuilding");
+  assert.equal(transferState(t2, squad, built, run("queued", null, null)), "rebuilding");
+  assert.equal(transferState(t2, squad, built, run("done", later, "2026-11-18T07:54:24Z")), "rebuilt");
+  assert.equal(transferState(t2, squad, built, run("failed", later, "2026-11-18T07:54:24Z")), "failed");
+  assert.equal(transferState(t2, squad, built, run("failed", "2026-11-18T06:00:00Z", "2026-11-18T07:00:00Z")), "waiting", "a failure before this forecast is old news");
   assert.equal(transferState(t2, squad, built, null), "waiting");
+});
+
+test("the run that built the forecast on screen is not a newer one, though it finished after it", () => {
+  // compute_forecast writes generatedAt mid-run; the run's own finish comes a minute later
+  const same: RebuildRun = { status: "done", startedAt: "2026-11-18T07:50:50Z", finishedAt: "2026-11-18T07:52:39Z" };
+  assert.equal(transferState(t2, squad, built, same), "waiting", "a transfer this run skipped (or saved after it read them) waits, not 'reload'");
 });
 
 test("the banner shows the state that needs you most", () => {

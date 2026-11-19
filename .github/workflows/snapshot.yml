@@ -117,9 +117,9 @@ jobs:
             fi
             echo "Push rejected (attempt $attempt); rebasing onto the latest ${GITHUB_REF_NAME}"
             # Two runs on one day write the same day's files. This run started later, so it read
-  # every transfer the earlier one did and more: on a clash in data/, its files win
-  # (in a rebase, "theirs" is the commit being replayed, i.e. this run's).
-  if ! git pull --rebase -X theirs origin "${GITHUB_REF_NAME}"; then
+            # every transfer the earlier one did and more: on a clash in data/, its files win
+            # (in a rebase, "theirs" is the commit being replayed, i.e. this run's).
+            if ! git pull --rebase -X theirs origin "${GITHUB_REF_NAME}"; then
               git rebase --abort || true
               echo "Rebase conflict; giving up"
               exit 1

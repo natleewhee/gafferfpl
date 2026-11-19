@@ -34,10 +34,9 @@ export default function TransferStatus({
 
   const check = useCallback(async () => setRun(await rebuildStatus()), []);
 
-  // ask once, again whenever a transfer is saved or a rebuild is started, and every 15 s while one runs
+  // Whenever a transfer is saved or a rebuild is started, look again (listening even with no
+  // transfers yet: the first save announces itself before this line has anything to show).
   useEffect(() => {
-    if (!needsRun) return;
-    const first = setTimeout(check, 0);
     let soon: ReturnType<typeof setTimeout> | undefined;
     const onCheck = () => {
       clearTimeout(soon);
@@ -45,9 +44,19 @@ export default function TransferStatus({
     };
     window.addEventListener(REBUILD_CHECK_EVENT, onCheck);
     return () => {
-      clearTimeout(first);
       clearTimeout(soon);
       window.removeEventListener(REBUILD_CHECK_EVENT, onCheck);
+    };
+  }, [check]);
+  // ask as soon as a transfer is not in the forecast, and again a few seconds on (a run just
+  // dispatched is not listed at once), then every 15 s while one runs
+  useEffect(() => {
+    if (!needsRun) return;
+    const first = setTimeout(check, 0);
+    const again = setTimeout(check, 4000);
+    return () => {
+      clearTimeout(first);
+      clearTimeout(again);
     };
   }, [needsRun, check]);
   const running = run?.status === "running" || run?.status === "queued";
@@ -69,8 +78,13 @@ export default function TransferStatus({
     setNote(null);
     try {
       const r = await rebuildNow();
-      setNote(r.rebuild === "scheduled" ? (r.hint ?? "Couldn't start a rebuild; the daily run (11:00 SGT) will pick it up.") : null);
-      setRun({ status: "queued", startedAt: new Date().toISOString(), finishedAt: null });
+      if (r.rebuild === "scheduled") {
+        // nothing started (no token, or GitHub refused): say so rather than show "rebuilding"
+        setNote(r.hint ?? "Couldn't start a rebuild; the daily run (11:00 SGT) will pick it up.");
+      } else {
+        setNote(null);
+        setRun({ status: "queued", startedAt: new Date().toISOString(), finishedAt: null });
+      }
     } catch (e) {
       setNote((e as Error).message);
     } finally {

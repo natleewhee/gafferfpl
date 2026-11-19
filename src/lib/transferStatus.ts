@@ -27,7 +27,9 @@ export function transferState(
   if (squadIds.has(t.in) && !squadIds.has(t.out)) return "in-forecast";
   if (!run) return "waiting";
   if (run.status === "queued" || run.status === "running") return "rebuilding";
-  const after = run.finishedAt != null && Date.parse(run.finishedAt) > Date.parse(forecastBuiltAt);
+  // "after" by when the run STARTED: the run that built the forecast on screen started before it
+  // wrote generatedAt but finished after it, so only a run that started later is a newer one
+  const after = run.startedAt != null && Date.parse(run.startedAt) > Date.parse(forecastBuiltAt);
   if (!after) return "waiting";
   return run.status === "failed" ? "failed" : "rebuilt";
 }
