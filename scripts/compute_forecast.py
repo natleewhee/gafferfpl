@@ -257,9 +257,14 @@ def saved_before(override: dict, cutoff: str | None) -> bool:
     saved = override.get("savedAt")
     if not saved:
         return True
+
+    def utc(iso: str) -> datetime:  # a time with no zone is UTC, as the app reads it
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
     try:
-        return datetime.fromisoformat(saved.replace("Z", "+00:00")) < datetime.fromisoformat(cutoff.replace("Z", "+00:00"))
-    except ValueError:
+        return utc(saved) < utc(cutoff)
+    except (ValueError, TypeError):
         return True
 
 
@@ -279,11 +284,12 @@ def load_overrides(gw: int, cutoff: str | None = None) -> list[dict]:
             f"picks are GW{gw})"
         )
         return []
-    transfers = dedupe_overrides(data.get("transfers", []))
+    transfers = data.get("transfers", [])
+    # the cutoff first, so a newer timed copy of a swap is the one dedupe keeps
     kept = [t for t in transfers if not saved_before(t, cutoff)]
     if len(kept) < len(transfers):
         print(f"overrides: dropping {len(transfers) - len(kept)} saved before the GW deadline that has passed ({cutoff})")
-    return kept
+    return dedupe_overrides(kept)
 
 
 def dedupe_overrides(overrides: list[dict]) -> list[dict]:

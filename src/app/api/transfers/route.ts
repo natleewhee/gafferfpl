@@ -80,13 +80,22 @@ export async function POST(req: NextRequest) {
     const transfers: PendingTransfer[] = isStale ? [] : liveTransfers(data.transfers, cutoff);
     const incoming: PendingTransfer = { out: outId, in: inId, ...(note ? { note } : {}), savedAt: new Date().toISOString() };
     // a repeated click (or a retry) of the same swap must not write a second copy
-    if (transfers.some((t) => sameTransfer(t, incoming))) {
-      return NextResponse.json({
-        ok: true,
-        duplicate: true,
-        rebuild: "none" satisfies Rebuild,
-        overrides: { basedOnGw, transfers },
-      });
+    const existing = transfers.findIndex((t) => sameTransfer(t, incoming));
+    if (existing >= 0) {
+      if (transfers[existing].savedAt) {
+        return NextResponse.json({
+          ok: true,
+          duplicate: true,
+          rebuild: "none" satisfies Rebuild,
+          overrides: { basedOnGw, transfers },
+        });
+      }
+      // the same swap saved before saving times were recorded: stamp it now, or the next
+      // deadline would void it as an old plan though it was just confirmed for this week
+      transfers[existing] = { ...transfers[existing], savedAt: incoming.savedAt };
+      const restamped: OverridesFile = { basedOnGw, transfers };
+      await putFile(restamped, sha, `Transfer confirmed: out ${outId}, in ${inId}`);
+      return NextResponse.json({ ok: true, duplicate: true, rebuild: "none" satisfies Rebuild, overrides: restamped });
     }
     transfers.push(incoming);
 

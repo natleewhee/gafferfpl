@@ -1128,3 +1128,20 @@ def test_load_overrides_drops_plans_saved_before_a_passed_deadline(tmp_path, mon
 
     assert cf.load_overrides(10, "2026-11-21T11:00:00Z") == [{"out": 5, "in": 6, "savedAt": "2026-11-21T11:30:00+00:00"}]
     assert len(cf.load_overrides(10)) == 3, "before the deadline, every saved transfer applies"
+
+
+def test_saved_before_reads_a_zoneless_time_as_utc_and_never_raises():
+    cutoff = "2026-11-21T11:00:00Z"
+    assert cf.saved_before({"savedAt": "2026-11-21T10:00:00"}, cutoff) is True  # hand-edited, no zone
+    assert cf.saved_before({"savedAt": "2026-11-21T12:00:00"}, cutoff) is False
+    assert cf.saved_before({"savedAt": "not a time"}, cutoff) is True
+
+
+def test_load_overrides_keeps_the_newer_timed_copy_of_a_swap(tmp_path, monkeypatch):
+    (tmp_path / "overrides").mkdir()
+    (tmp_path / "overrides" / "transfers.json").write_text(
+        json.dumps({"basedOnGw": 10, "transfers": [{"out": 1, "in": 2}, {"out": 1, "in": 2, "savedAt": "2026-11-22T00:00:00Z"}]})
+    )
+    monkeypatch.setattr(cf, "DATA_DIR", tmp_path)
+
+    assert cf.load_overrides(10, "2026-11-21T11:00:00Z") == [{"out": 1, "in": 2, "savedAt": "2026-11-22T00:00:00Z"}]

@@ -19,3 +19,9 @@ test("after it, only transfers saved since apply; old ones (or untimed) were pla
   assert.deepEqual(liveTransfers(saved, cutoff).map((t) => t.out), [5, 7]);
   assert.equal(stillApplies({ out: 1, in: 2, savedAt: "soon" }, cutoff), false, "an unreadable time counts as before");
 });
+
+test("a time with no zone reads as UTC, as the forecast build reads it", () => {
+  assert.equal(stillApplies({ out: 1, in: 2, savedAt: "2026-11-21T10:00:00" }, cutoff), false);
+  assert.equal(stillApplies({ out: 1, in: 2, savedAt: "2026-11-21T12:00:00" }, cutoff), true);
+  assert.equal(stillApplies({ out: 1, in: 2, savedAt: "2026-11-21T12:00:00+08:00" }, cutoff), false, "noon in SGT is 04:00 UTC");
+});

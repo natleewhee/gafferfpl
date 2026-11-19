@@ -743,7 +743,8 @@ export default function AppShell({
   // saved for this forecast's week, and not plans for a week whose deadline has since passed
   const committedPending: PendingTransfer[] =
     overrides && overrides.basedOnGw === forecast.basedOnGameweek ? liveTransfers(overrides.transfers, forecast.overridesCutoff) : [];
-  const pendingTransfers = pendingEdited ?? committedPending;
+  // one filter for both: an undo hands back the whole file, which can still hold void ones
+  const pendingTransfers = liveTransfers(pendingEdited ?? committedPending, forecast.overridesCutoff);
   const squadIds = new Set(forecast.squad.players.map((p) => p.id)); // the fifteen this forecast was built for
   // Only the app's own team can save transfers (the route enforces it too).
   const transferTools: TransferTools | undefined = isGuest

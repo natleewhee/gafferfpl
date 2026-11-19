@@ -17,8 +17,12 @@ export function dedupeTransfers(transfers: PendingTransfer[]): PendingTransfer[]
  * Transfers with no savedAt (saved before it was recorded) count as before. */
 export function stillApplies(t: PendingTransfer, cutoff: string | null | undefined): boolean {
   if (!cutoff) return true;
-  const saved = t.savedAt ? Date.parse(t.savedAt) : NaN;
-  return Number.isFinite(saved) && saved >= Date.parse(cutoff);
+  const saved = t.savedAt ? parseUtc(t.savedAt) : NaN;
+  return Number.isFinite(saved) && saved >= parseUtc(cutoff);
+}
+/** An ISO time, read as UTC when it carries no zone (as the forecast build reads it), not local. */
+function parseUtc(iso: string): number {
+  return Date.parse(/(Z|[+-]\d\d:?\d\d)$/i.test(iso) || !iso.includes("T") ? iso : `${iso}Z`);
 }
 export const liveTransfers = (transfers: PendingTransfer[], cutoff: string | null | undefined) =>
   transfers.filter((t) => stillApplies(t, cutoff));
