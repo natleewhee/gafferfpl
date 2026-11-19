@@ -380,6 +380,66 @@ test.describe("Squad and Scenarios tabs", () => {
   });
 });
 
+test.describe("Saved transfers say where they have got to", () => {
+  // one saved transfer the forecast was NOT built with: its incoming man is not in the fifteen
+  const pendingOne = async (page: Page, run: object | null) => {
+    await page.route("**/api/rebuild", (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true, run }) })
+        : route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true, rebuild: "started" }) }),
+    );
+    await page.route("**/api/transfers", async (route) => {
+      const posted = JSON.parse(route.request().postData() ?? "{}");
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, rebuild: "started", overrides: { basedOnGw: posted.basedOnGw, transfers: [{ out: posted.outId, in: posted.inId }] } }),
+      });
+    });
+    await mockLive(page, { current: "a" });
+    await open(page);
+    await openTab(page, "Squad");
+    const scene = await visibleScene(page);
+    await scene.locator("button[data-flip]").first().click();
+    await page.getByRole("button", { name: /^Replace / }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.locator("li button").first().click();
+    await dialog.getByRole("button", { name: "Save transfer" }).click();
+    await expect(dialog.getByRole("status")).toContainText("Saved");
+    await page.keyboard.press("Escape");
+    return page.getByTestId("transfer-status");
+  };
+
+  test("while the rebuild runs it says so, and the line opens to name the transfer", async ({ page }) => {
+    const status = await pendingOne(page, { status: "running", startedAt: new Date().toISOString(), finishedAt: null });
+    await expect(status).toHaveAttribute("data-state", "rebuilding", { timeout: 10000 });
+    await expect(status).toContainText("rebuilding");
+    const line = status.getByRole("button").first();
+    expect((await line.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await line.click();
+    await expect(status.locator("li")).toHaveCount(1);
+    await expect(status.locator("li")).toContainText("\u2192");
+    await expect(status).toContainText("Rebuilding the forecast");
+  });
+
+  test("a failed rebuild says so and offers a retry", async ({ page }) => {
+    const later = new Date(Date.now() + 60_000).toISOString(); // finished after this forecast was built
+    const status = await pendingOne(page, { status: "failed", startedAt: later, finishedAt: later });
+    await expect(status).toHaveAttribute("data-state", "failed", { timeout: 10000 });
+    await status.getByRole("button").first().click();
+    await expect(status.getByRole("button", { name: "Retry the rebuild" })).toBeVisible();
+    await status.getByRole("button", { name: "Retry the rebuild" }).click();
+    await expect(status).toHaveAttribute("data-state", "rebuilding");
+  });
+
+  test("a finished rebuild newer than the page asks for a reload", async ({ page }) => {
+    const later = new Date(Date.now() + 60_000).toISOString();
+    const status = await pendingOne(page, { status: "done", startedAt: later, finishedAt: later });
+    await expect(status).toHaveAttribute("data-state", "rebuilt", { timeout: 10000 });
+    await status.getByRole("button").first().click();
+    await expect(status.getByRole("button", { name: /^Reload/ })).toBeVisible();
+  });
+});
+
 test.describe("Replace a player on the pitch", () => {
   test("lists legal options, confirms, and saves through the transfers route", async ({ page }) => {
     let posted: { outId: number; inId: number; basedOnGw: number } | null = null;
@@ -416,9 +476,9 @@ test.describe("Replace a player on the pitch", () => {
     expect(posted!.outId).not.toBe(posted!.inId);
 
     await page.keyboard.press("Escape");
-    // the saved swap now marks the outgoing shirt, and the deadline banner counts it
+    // the saved swap now marks the outgoing shirt, and the status line under the banner counts it
     await expect(scene.locator("span[title^='Saved transfer']")).toHaveCount(1);
-    await expect(page.getByTestId("deadline-banner")).toContainText("1 pending");
+    await expect(page.getByTestId("transfer-status")).toContainText("1 saved transfer");
 
     // and the pitch previews the incoming player in their place, still eleven on the pitch
     await expect(page.getByTestId("preview-banner")).toContainText("1 saved transfer");

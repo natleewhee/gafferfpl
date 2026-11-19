@@ -45,6 +45,7 @@ async function call(method: "POST" | "DELETE", body: unknown): Promise<TransferR
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || (method === "POST" ? "Failed to save" : "Failed to remove"));
+  askRebuildCheck();
   return {
     transfers: json.overrides?.transfers ?? [],
     rebuild: json.rebuild ?? "scheduled",
@@ -63,5 +64,25 @@ export async function rebuildNow(): Promise<{ rebuild: Rebuild; hint?: string }>
   const res = await ownerFetch("/api/rebuild", { method: "POST" });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || "Couldn't start a rebuild");
+  askRebuildCheck();
   return { rebuild: json.rebuild ?? "scheduled", hint: json.hint };
 }
+
+/** Where the latest rebuild is (owner only; no key prompt: a locked browser just gets null). */
+export async function rebuildStatus(): Promise<import("./transferStatus").RebuildRun | null> {
+  try {
+    const res = await fetch("/api/rebuild", { cache: "no-store" });
+    if (!res.ok) return null;
+    return ((await res.json()) as { run?: import("./transferStatus").RebuildRun | null }).run ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Saving or removing a transfer tells the status row to look again. */
+export const REBUILD_CHECK_EVENT = "gaffer:rebuild-check";
+export const askRebuildCheck = () => {
+  try {
+    window.dispatchEvent(new Event(REBUILD_CHECK_EVENT));
+  } catch {}
+};

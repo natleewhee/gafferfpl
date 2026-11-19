@@ -1,5 +1,6 @@
 import { NO_TOKEN_HINT, refusalHint } from "./rebuildHints";
 import { REPO_BRANCH, REPO_NAME, REPO_OWNER } from "./repo";
+import { runFromGithub, type RebuildRun } from "./transferStatus";
 
 const WORKFLOW = "snapshot.yml";
 export type DispatchResult = {
@@ -48,5 +49,23 @@ export async function dispatchRebuild(opts: { skipIfRunning?: boolean } = {}): P
   } catch (err) {
     console.warn(`rebuild dispatch failed: ${(err as Error).message}`);
     return { rebuild: "scheduled", hint: "Couldn't reach GitHub to start the rebuild." };
+  }
+}
+
+/** Server side only: the latest run of the rebuild workflow on this branch, or null when GitHub
+ * can't be asked (no token, an error). */
+export async function latestRebuildRun(): Promise<RebuildRun | null> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${WORKFLOW}/runs?per_page=1&branch=${encodeURIComponent(REPO_BRANCH)}`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as { workflow_runs?: Parameters<typeof runFromGithub>[0][] };
+    return runFromGithub(json.workflow_runs?.[0]);
+  } catch {
+    return null;
   }
 }

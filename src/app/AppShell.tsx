@@ -21,6 +21,7 @@ import type { PitchKits, PitchLooks } from "@/lib/appearance";
 import { usableLiveSquad, type LiveSquadFeed } from "@/lib/squadSync";
 import DeadlineChecklist from "./DeadlineChecklist";
 import DeadlineBanner from "./DeadlineBanner";
+import TransferStatus from "./TransferStatus";
 import History from "./History";
 import LiveTracker from "./LiveTracker";
 import LeaguesPage from "./LeaguesPage";
@@ -742,6 +743,7 @@ export default function AppShell({
   const committedPending: PendingTransfer[] =
     overrides && overrides.basedOnGw === forecast.basedOnGameweek ? overrides.transfers : [];
   const pendingTransfers = pendingEdited ?? committedPending;
+  const squadIds = new Set(forecast.squad.players.map((p) => p.id)); // the fifteen this forecast was built for
   // Only the app's own team can save transfers (the route enforces it too).
   const transferTools: TransferTools | undefined = isGuest
     ? undefined
@@ -862,8 +864,16 @@ export default function AppShell({
         <DeadlineBanner
           deadline={forecast.deadlineTime}
           gameweek={forecast.targetGameweek}
-          pendingTransfers={isGuest ? 0 : pendingTransfers.length}
+          transfersIn={!isGuest && pendingTransfers.length > 0 && pendingTransfers.every((t) => squadIds.has(t.in) && !squadIds.has(t.out)) ? pendingTransfers.length : 0}
         />
+        {!isGuest && (
+          <TransferStatus
+            transfers={pendingTransfers}
+            nameOf={(id) => bootstrap.players.find((p) => p.id === id)?.webName ?? `#${id}`}
+            squadIds={squadIds}
+            forecastBuiltAt={forecast.generatedAt}
+          />
+        )}
         {isViewingSharedLink && (
           <SharedLinkBanner
             teamName={forecast.teamName}
