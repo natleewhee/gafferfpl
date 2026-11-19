@@ -68,6 +68,7 @@ type Tok = {
   code?: number | null;
   recentPoints?: (number | null)[];
   swapTo?: string; // a saved transfer replaces this player with them at the next rebuild
+  arrived?: string; // came in through a saved transfer that the forecast is built with (for this player)
   // set on a previewed incoming player: a saved transfer, shown in the outgoing player's place
   preview?: { replaces: string; outId: number; pool: PoolPlayer; applied?: boolean };
 };
@@ -125,6 +126,9 @@ function PlayerToken({
     badges.push({ key: "swap", title: t.preview.applied ? `In your FPL squad now: replaces ${t.preview.replaces}` : `Saved transfer: replaces ${t.preview.replaces} (preview until the next rebuild)`, node: <span className="font-black text-[var(--accent-2)]">{"\u21C4"}</span> });
   } else if (t.swapTo) {
     badges.push({ key: "swap", title: `Saved transfer: replaced by ${t.swapTo} at the next rebuild`, node: <span className="font-black text-[var(--accent-2)]">{"\u21C4"}</span> });
+  }
+  if (t.arrived) {
+    badges.push({ key: "in", title: `Saved transfer, in the forecast: in for ${t.arrived}`, node: <span className="font-black text-[var(--accent)]">IN</span> });
   }
   return (
     <button
@@ -186,6 +190,9 @@ function tokLabel(t: Tok): { ariaLabel: string; title: string; badges: ReturnTyp
       title: t.preview ? (t.preview.applied ? `In your FPL squad now: replaces ${t.preview.replaces}` : `Saved transfer: replaces ${t.preview.replaces}`) : `Saved transfer: replaced by ${t.swapTo} at the next rebuild`,
       node: <span className="font-black text-[var(--accent-2)]">{"\u21C4"}</span>,
     });
+  }
+  if (t.arrived) {
+    badges.push({ key: "in", title: `Saved transfer, in the forecast: in for ${t.arrived}`, node: <span className="font-black text-[var(--accent)]">IN</span> });
   }
   return {
     ariaLabel: `${t.webName}: ${t.xp != null ? t.xp.toFixed(1) : "no"} xP${bandTitle ? `, typical range ${bandTitle}` : ""}${doubt ? `, ${doubt.label}` : ""}, show breakdown`,
@@ -251,6 +258,12 @@ export default function Pitch({
     const t = transferTools?.pending.find((x) => x.out === id);
     return t ? (transferTools?.allPlayers.find((p) => p.id === t.in)?.webName ?? `#${t.in}`) : undefined;
   };
+  // a saved transfer the forecast is already built with: the man who came in is in the fifteen,
+  // the man who left is not; he gets an IN badge naming who he replaced
+  const arrivedFor = (id: number): string | undefined => {
+    const t = transferTools?.pending.find((x) => x.in === id && !byId.has(x.out));
+    return t ? (transferTools?.allPlayers.find((p) => p.id === t.out)?.webName ?? `#${t.out}`) : undefined;
+  };
   const tok = (id: number): Tok | null => {
     const base = byId.get(id);
     if (!base) return null;
@@ -284,6 +297,7 @@ export default function Pitch({
       floorCeiling: base.floorCeiling,
       availability: base.availability,
       swapTo: swapTarget(id),
+      arrived: arrivedFor(id),
       code: base.code,
       recentPoints: base.recentPoints,
     };

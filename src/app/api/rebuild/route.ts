@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { LOCKED_BODY, isOwnerRequest } from "@/lib/ownerAuth";
-import { dispatchRebuild } from "@/lib/rebuildDispatch";
+import { dispatchRebuild, latestRebuildRun } from "@/lib/rebuildDispatch";
 
 /** The "Rebuild now" button: starts the forecast rebuild (data refresh plus
  * the optimiser) instead of waiting for the daily 03:00 UTC run. Owner only
@@ -9,4 +9,11 @@ export async function POST(req: NextRequest) {
   if (!isOwnerRequest(req)) return NextResponse.json(LOCKED_BODY, { status: 401 });
   const result = await dispatchRebuild({ skipIfRunning: true });
   return NextResponse.json({ ok: true, ...result });
+}
+
+/** Where the latest rebuild has got to, so saved transfers can say "rebuilding", "failed" or
+ * "rebuilt, reload". Owner only, like the button; nothing is started. */
+export async function GET(req: NextRequest) {
+  if (!isOwnerRequest(req)) return NextResponse.json(LOCKED_BODY, { status: 401 });
+  return NextResponse.json({ ok: true, run: await latestRebuildRun() }, { headers: { "Cache-Control": "no-store" } });
 }

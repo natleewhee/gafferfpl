@@ -21,6 +21,7 @@ import type { PitchKits, PitchLooks } from "@/lib/appearance";
 import { usableLiveSquad, type LiveSquadFeed } from "@/lib/squadSync";
 import DeadlineChecklist from "./DeadlineChecklist";
 import DeadlineBanner from "./DeadlineBanner";
+import TransferStatus from "./TransferStatus";
 import History from "./History";
 import LiveTracker from "./LiveTracker";
 import LeaguesPage from "./LeaguesPage";
@@ -859,11 +860,15 @@ export default function AppShell({
           error={error}
         />
         <StaleForecastBanner generatedAt={forecast.generatedAt} />
-        <DeadlineBanner
-          deadline={forecast.deadlineTime}
-          gameweek={forecast.targetGameweek}
-          pendingTransfers={isGuest ? 0 : pendingTransfers.length}
-        />
+        <DeadlineBanner deadline={forecast.deadlineTime} gameweek={forecast.targetGameweek} />
+        {!isGuest && (
+          <TransferStatus
+            transfers={pendingTransfers}
+            nameOf={(id) => bootstrap.players.find((p) => p.id === id)?.webName ?? `#${id}`}
+            squadIds={new Set(forecast.squad.players.map((p) => p.id))}
+            forecastBuiltAt={forecast.generatedAt}
+          />
+        )}
         {isViewingSharedLink && (
           <SharedLinkBanner
             teamName={forecast.teamName}

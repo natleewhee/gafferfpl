@@ -24,7 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # Start from the branch as it is now, not the commit that was current when this
+      # run was requested: a run that waited in the queue behind another must build
+      # on top of what that run pushed (and read every transfer saved since).
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-python@v5
         with:
@@ -111,7 +116,10 @@ jobs:
               exit 0
             fi
             echo "Push rejected (attempt $attempt); rebasing onto the latest ${GITHUB_REF_NAME}"
-            if ! git pull --rebase origin "${GITHUB_REF_NAME}"; then
+            # Two runs on one day write the same day's files. This run started later, so it read
+  # every transfer the earlier one did and more: on a clash in data/, its files win
+  # (in a rebase, "theirs" is the commit being replayed, i.e. this run's).
+  if ! git pull --rebase -X theirs origin "${GITHUB_REF_NAME}"; then
               git rebase --abort || true
               echo "Rebase conflict; giving up"
               exit 1

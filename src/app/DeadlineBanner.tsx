@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 import { countdown, sgDayTime } from "@/lib/time";
 
 /* A one-line reminder under the team bar, on every tab, while a deadline is
- * ahead: how long is left, when it is in Singapore time, and whether a transfer is
- * waiting to be applied (the captain is on the pitch and in the checklist, so it
- * is not repeated here). One line, never wrapped. It turns amber inside a day
- * and red inside three hours. "Now" is read after mount because this page is
- * built statically. */
+ * ahead: how long is left and when it is in Singapore time. One line, never
+ * wrapped. It turns amber inside a day and red inside three hours. "Now" is read after mount because this page is
+ * built statically. Saved transfers have their own line under it (TransferStatus). */
 
 function sgDeadline(iso: string): string {
   return `${sgDayTime(iso)} SGT`;
@@ -17,11 +15,9 @@ function sgDeadline(iso: string): string {
 export default function DeadlineBanner({
   deadline,
   gameweek,
-  pendingTransfers,
 }: {
   deadline: string | null | undefined;
   gameweek: number;
-  pendingTransfers: number;
 }) {
   const [nowMs, setNowMs] = useState<number | null>(null);
   useEffect(() => {
@@ -64,14 +60,6 @@ export default function DeadlineBanner({
       </span>
       <span className="shrink-0 font-mono font-semibold tabular-nums text-ink">{countdown(deadline, nowMs)}</span>
       <span className="min-w-0 truncate text-ink-faint">{sgDeadline(deadline)}</span>
-      {pendingTransfers > 0 && (
-        <span className="chip chip-warn ml-auto shrink-0">
-          <span aria-hidden>{pendingTransfers} pending</span>
-          <span className="sr-only">
-            {pendingTransfers} transfer{pendingTransfers > 1 ? "s" : ""} pending
-          </span>
-        </span>
-      )}
     </div>
   );
 }
