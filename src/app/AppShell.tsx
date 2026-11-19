@@ -743,6 +743,7 @@ export default function AppShell({
   const committedPending: PendingTransfer[] =
     overrides && overrides.basedOnGw === forecast.basedOnGameweek ? overrides.transfers : [];
   const pendingTransfers = pendingEdited ?? committedPending;
+  const squadIds = new Set(forecast.squad.players.map((p) => p.id)); // the fifteen this forecast was built for
   // Only the app's own team can save transfers (the route enforces it too).
   const transferTools: TransferTools | undefined = isGuest
     ? undefined
@@ -860,12 +861,16 @@ export default function AppShell({
           error={error}
         />
         <StaleForecastBanner generatedAt={forecast.generatedAt} />
-        <DeadlineBanner deadline={forecast.deadlineTime} gameweek={forecast.targetGameweek} />
+        <DeadlineBanner
+          deadline={forecast.deadlineTime}
+          gameweek={forecast.targetGameweek}
+          transfersIn={!isGuest && pendingTransfers.length > 0 && pendingTransfers.every((t) => squadIds.has(t.in) && !squadIds.has(t.out)) ? pendingTransfers.length : 0}
+        />
         {!isGuest && (
           <TransferStatus
             transfers={pendingTransfers}
             nameOf={(id) => bootstrap.players.find((p) => p.id === id)?.webName ?? `#${id}`}
-            squadIds={new Set(forecast.squad.players.map((p) => p.id))}
+            squadIds={squadIds}
             forecastBuiltAt={forecast.generatedAt}
           />
         )}

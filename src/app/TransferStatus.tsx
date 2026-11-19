@@ -5,9 +5,10 @@ import { sgDayTime } from "@/lib/time";
 import { REBUILD_CHECK_EVENT, rebuildNow, rebuildStatus } from "@/lib/transfersClient";
 import { STATE_COPY, overallState, transferState, type RebuildRun, type SavedTransfer, type TransferState } from "@/lib/transferStatus";
 
-/* Saved transfers and where each has got to: in the forecast, rebuilding, rebuilt (reload to
- * see it), failed, or waiting. A line under the deadline banner on every tab; tap it for the
- * list and the one thing to do about it (retry, reload, rebuild now). Owner only. */
+/* Saved transfers that are not in the forecast yet, and where each has got to: rebuilding,
+ * rebuilt (reload to see it), failed, or waiting. A line under the deadline banner on every tab
+ * while there is one; tap it for the list and the one thing to do about it (retry, reload,
+ * rebuild now). Once all are in, the banner's chip and the pitch's IN badges say so. Owner only. */
 
 const TONE: Record<"accent" | "warn" | "danger", string> = {
   accent: "var(--accent)",
@@ -66,7 +67,9 @@ export default function TransferStatus({
     return () => clearInterval(id);
   }, [needsRun, running, check]);
 
-  if (!transfers.length) return null;
+  // all in the forecast: nothing to do, so no line (the deadline banner's chip and the pitch's IN
+  // badges say so); the line takes its space only while there is something to wait for or act on
+  if (!transfers.length || !needsRun) return null;
   const states: TransferState[] = transfers.map((t) => transferState(t, squadIds, forecastBuiltAt, run));
   const overall = overallState(states)!;
   const copy = STATE_COPY[overall];
