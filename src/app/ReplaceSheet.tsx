@@ -20,6 +20,8 @@ import { FormBars } from "./Shirt";
 /** What the Squad pitch needs to offer "replace this player" (own team only). */
 export type TransferTools = {
   basedOnGw: number;
+  /** The forecast's overridesCutoff: saved transfers from before it are dropped when saving. */
+  cutoff?: string | null;
   bank: number; // £m in the bank, before any saved-but-unapplied transfer
   pool: PoolPlayer[];
   allPlayers: Player[];
@@ -78,7 +80,7 @@ export default function ReplaceSheet({
     setStatus("saving");
     setMessage("");
     try {
-      const r = await saveTransfer(out.id, chosen.id, tools.basedOnGw);
+      const r = await saveTransfer(out.id, chosen.id, tools.basedOnGw, "", tools.cutoff);
       tools.onPendingChange(r.transfers);
       setRebuild(r.rebuild);
       setHint(r.rebuildHint);

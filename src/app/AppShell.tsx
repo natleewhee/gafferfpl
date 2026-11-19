@@ -45,7 +45,7 @@ import {
 import { STALE_AFTER_HOURS, describeAge, forecastAgeHours, sgDateTime } from "@/lib/time";
 import CaptainShortlist from "./CaptainShortlist";
 import FixtureTicker from "./FixtureTicker";
-import type { PendingTransfer } from "@/lib/transfers";
+import { liveTransfers, type PendingTransfer } from "@/lib/transfers";
 import type { TransferTools } from "./ReplaceSheet";
 import { setPitchAmbient, setPitchView, usePitch3dUnavailable, usePitchAmbient, useShownPitchView, usePrefersReducedMotion } from "@/lib/pitchView";
 
@@ -740,15 +740,18 @@ export default function AppShell({
     return <TeamIdGate onSubmit={loadTeam} loading={loading} slow={slow} error={error} />;
   }
 
+  // saved for this forecast's week, and not plans for a week whose deadline has since passed
   const committedPending: PendingTransfer[] =
-    overrides && overrides.basedOnGw === forecast.basedOnGameweek ? overrides.transfers : [];
-  const pendingTransfers = pendingEdited ?? committedPending;
+    overrides && overrides.basedOnGw === forecast.basedOnGameweek ? liveTransfers(overrides.transfers, forecast.overridesCutoff) : [];
+  // one filter for both: an undo hands back the whole file, which can still hold void ones
+  const pendingTransfers = liveTransfers(pendingEdited ?? committedPending, forecast.overridesCutoff);
   const squadIds = new Set(forecast.squad.players.map((p) => p.id)); // the fifteen this forecast was built for
   // Only the app's own team can save transfers (the route enforces it too).
   const transferTools: TransferTools | undefined = isGuest
     ? undefined
     : {
         basedOnGw: forecast.basedOnGameweek,
+        cutoff: forecast.overridesCutoff ?? null,
         bank: forecast.squad.bank,
         pool: forecast.pool ?? [],
         allPlayers: bootstrap.players,
@@ -827,6 +830,7 @@ export default function AppShell({
             squad={forecast.squad.players}
             allPlayers={bootstrap.players}
             basedOnGw={forecast.basedOnGameweek}
+            cutoff={forecast.overridesCutoff ?? null}
             bank={forecast.squad.bank}
             pending={pendingTransfers}
             onPendingChange={setPendingEdited}

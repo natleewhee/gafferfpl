@@ -85,14 +85,13 @@ const base = (): Pose => ({
   burst: false,
 });
 
-/** Standing (or seated) at rest: every joint at its resting value. */
+/** Standing at rest: every joint at its resting value. */
 export const restingPose = (): Pose => base();
 
 export type MomentKind = "goal" | "cleanSheet";
 
-/** How long each celebration lasts. A bench cheer is shorter. */
+/** How long each celebration lasts. */
 export const GOAL_SECONDS = 3.6;
-export const BENCH_CHEER_SECONDS = 2.2;
 
 const RUN = 0.9; // run towards the corner
 const SLIDE = 0.6; // knee slide
@@ -197,20 +196,7 @@ export function cleanSheetPose(t: number): Pose {
   return p;
 }
 
-/** A player on the bench stays seated and cheers: arms up, bouncing. The seat pose is the
- * stage's own, so this only returns the changes on top of it. */
-export function benchCheerPose(t: number): Pose {
-  const p = base();
-  const fade = clamp01(1 - (t - (BENCH_CHEER_SECONDS - 0.3)) / 0.3);
-  p.bodyY = Math.abs(Math.sin(t * 7)) * 0.22 * fade;
-  const pump = Math.sin(t * 12) * 0.25;
-  p.armL.z = -(2.55 + pump) * fade;
-  p.armR.z = (2.55 - pump) * fade;
-  return p;
-}
-
-export function momentSeconds(kind: MomentKind, bench: boolean): number {
-  if (bench && kind === "goal") return BENCH_CHEER_SECONDS;
+export function momentSeconds(kind: MomentKind): number {
   return kind === "goal" ? GOAL_SECONDS : CLEAN_SHEET_SECONDS;
 }
 

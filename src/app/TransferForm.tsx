@@ -10,6 +10,7 @@ type Props = {
   squad: ForecastPlayer[];
   allPlayers: Player[];
   basedOnGw: number;
+  cutoff?: string | null; // the forecast's overridesCutoff
   bank: number; // £m in the bank
   // The saved-but-unapplied transfers live in the page above, so the pitch's
   // replace sheet, the deadline banner and this form always agree.
@@ -20,7 +21,7 @@ type Props = {
 const fieldClass =
   "mt-1 w-full rounded-lg border border-line bg-[var(--bg-2)] px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent)_30%,transparent)]";
 
-export default function TransferForm({ squad, allPlayers, basedOnGw, bank, pending, onPendingChange }: Props) {
+export default function TransferForm({ squad, allPlayers, basedOnGw, cutoff = null, bank, pending, onPendingChange }: Props) {
   const [outId, setOutId] = useState<number | "">("");
   const [inQuery, setInQuery] = useState("");
   const [inId, setInId] = useState<number | "">("");
@@ -58,7 +59,7 @@ export default function TransferForm({ squad, allPlayers, basedOnGw, bank, pendi
     setErrorMsg("");
     const summary = `${nameOf(outId)} \u2192 ${nameOf(inId)}`;
     try {
-      const r = await saveTransfer(outId, inId, basedOnGw, note);
+      const r = await saveTransfer(outId, inId, basedOnGw, note, cutoff);
       onPendingChange(r.transfers);
       setConfirmation({
         text: r.duplicate ? `Already saved: ${summary}` : `Saved: ${summary}`,

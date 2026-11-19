@@ -1,12 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  BENCH_CHEER_SECONDS,
   BROADCAST,
   CLEAN_SHEET_SECONDS,
   GOAL_SECONDS,
   WALL_BRICKS,
-  benchCheerPose,
   blend,
   cleanSheetPose,
   focusShot,
@@ -80,19 +78,9 @@ test("a goal and a clean sheet are different moves", () => {
   assert.equal(cleanSheetPose(1.5).burst, false);
 });
 
-test("a benched player cheers on the spot: bouncing with arms up, then settles", () => {
-  const p = benchCheerPose(0.8);
-  assert.equal(p.dz, 0);
-  assert.ok(Math.abs(p.armL.z) > 2.2);
-  const end = benchCheerPose(BENCH_CHEER_SECONDS);
-  close(end.bodyY, 0, 0.001);
-  close(end.armL.z, 0, 0.001);
-});
-
 test("celebration lengths", () => {
-  assert.equal(momentSeconds("goal", false), GOAL_SECONDS);
-  assert.equal(momentSeconds("goal", true), BENCH_CHEER_SECONDS);
-  assert.equal(momentSeconds("cleanSheet", false), CLEAN_SHEET_SECONDS);
+  assert.equal(momentSeconds("goal"), GOAL_SECONDS);
+  assert.equal(momentSeconds("cleanSheet"), CLEAN_SHEET_SECONDS);
 });
 
 test("which moments play, in order: goals first, then the clean sheet", () => {

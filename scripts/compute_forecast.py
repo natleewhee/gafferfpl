@@ -35,13 +35,15 @@ from engine.history import ColdStart, archive_rates_for, classify, load_history,
 from engine.model import ModelContext
 from engine.optimise import (
     PlanWeek,
-    ScenarioResult,
     derive_free_transfers,
     free_transfer_ledger,
     plan_transfers,
     solve_squad,
     with_held_rows,
 )
+from engine.scenario_shape import player_ref as _player_ref
+from engine.scenario_shape import scenario_to_dict as _scenario_to_dict
+from engine.scenario_shape import scenario_weeks as _scenario_weeks  # noqa: F401 -- tests reach it here
 from engine.squad import (
     best_xi,
     floor_ceiling,
@@ -247,8 +249,31 @@ def load_entry_history() -> dict:
     return load_json(files[-1]) if files else {}
 
 
-def load_overrides(gw: int) -> list[dict]:
-    """Manual transfers recorded against ``gw``; ignored once picks have moved on."""
+def saved_before(override: dict, cutoff: str | None) -> bool:
+    """True when a saved transfer predates ``cutoff`` (the deadline of the week in play), or
+    has no ``savedAt`` at all (saved before it was recorded)."""
+    if cutoff is None:
+        return False
+    saved = override.get("savedAt")
+    if not saved:
+        return True
+
+    def utc(iso: str) -> datetime:  # a time with no zone is UTC, as the app reads it
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+    try:
+        return utc(saved) < utc(cutoff)
+    except (ValueError, TypeError):
+        return True
+
+
+def load_overrides(gw: int, cutoff: str | None = None) -> list[dict]:
+    """Manual transfers recorded against ``gw``; ignored once picks have moved on.
+
+    ``cutoff``: once the week in play's deadline has passed the squad is the one FPL locked in,
+    so transfers saved before that deadline were plans for it -- already in the live squad if
+    they were made, void if not. Only transfers saved since apply (to the next week)."""
     path = DATA_DIR / "overrides" / "transfers.json"
     if not path.exists():
         return []
@@ -259,7 +284,12 @@ def load_overrides(gw: int) -> list[dict]:
             f"picks are GW{gw})"
         )
         return []
-    return dedupe_overrides(data.get("transfers", []))
+    transfers = data.get("transfers", [])
+    # the cutoff first, so a newer timed copy of a swap is the one dedupe keeps
+    kept = [t for t in transfers if not saved_before(t, cutoff)]
+    if len(kept) < len(transfers):
+        print(f"overrides: dropping {len(transfers) - len(kept)} saved before the GW deadline that has passed ({cutoff})")
+    return dedupe_overrides(kept)
 
 
 def dedupe_overrides(overrides: list[dict]) -> list[dict]:
@@ -663,74 +693,6 @@ def deadline_time_for_gw(bootstrap: dict, gw: int) -> str | None:
         if event["id"] == gw:
             return event.get("deadline_time")
     return None
-
-
-def _player_ref(pid: int, pool_by_id: dict) -> dict:
-    p = pool_by_id.get(pid, {})
-    return {
-        "id": pid,
-        "webName": p.get("webName"),
-        "position": p.get("position"),
-        "team": p.get("team"),
-        "price": p.get("price"),
-        "availability": p.get("availability"),
-    }
-
-
-def _scenario_weeks(result: ScenarioResult, pool_by_id: dict, target_gw: int) -> list[dict]:
-    """Per-gameweek detail for a solved scenario -- the XI that week, each
-    player's opponent(s)/FDR and that week's xP, and the week's total (captain
-    doubled). Lets the UI offer a "pick a GW within this horizon" view rather
-    than only the horizon-wide net total."""
-    weeks = []
-    for offset in range(result.horizon_gws):
-        xi_ids = result.xi_by_gw[offset] if offset < len(result.xi_by_gw) else []
-        captain_id = result.captain_by_gw[offset] if offset < len(result.captain_by_gw) else None
-        players = []
-        total = 0.0
-        for pid in xi_ids:
-            p = pool_by_id.get(pid, {})
-            per_gw = p.get("perGameweek") or []
-            xp = per_gw[offset] if offset < len(per_gw) else None
-            opponents_by_gw = p.get("opponents") or []
-            opponents = opponents_by_gw[offset] if offset < len(opponents_by_gw) else []
-            is_captain = pid == captain_id
-            players.append(
-                {
-                    "id": pid,
-                    "webName": p.get("webName"),
-                    "position": p.get("position"),
-                    "team": p.get("team"),
-                    "xp": xp,
-                    "opponents": opponents,
-                    "isCaptain": is_captain,
-                }
-            )
-            if xp is not None:
-                total += xp * (2 if is_captain else 1)
-        weeks.append(
-            {
-                "targetGw": target_gw + offset,
-                "players": players,
-                "totalXp": round(total, 2),
-            }
-        )
-    return weeks
-
-
-def _scenario_to_dict(result: ScenarioResult, pool_by_id: dict, target_gw: int) -> dict:
-    return {
-        "squad": result.squad_ids,
-        "xiByGw": result.xi_by_gw,
-        "captainByGw": result.captain_by_gw,
-        "horizonGws": result.horizon_gws,
-        "points": result.points,
-        "hitCost": result.hit_cost,
-        "netPoints": result.net_points,
-        "transfersIn": [_player_ref(pid, pool_by_id) for pid in result.transfers_in],
-        "transfersOut": [_player_ref(pid, pool_by_id) for pid in result.transfers_out],
-        "weeks": _scenario_weeks(result, pool_by_id, target_gw),
-    }
 
 
 def _plan_week_to_dict(week: PlanWeek, pool_by_id: dict, target_gw: int) -> dict:
@@ -1257,6 +1219,7 @@ def build_personal_forecast(
     entry_history: dict,
     squad_ids: list[int],
     overrides_applied: int = 0,
+    overrides_cutoff: str | None = None,
     season_history: dict | None = None,
     include_model_record: bool = True,
     squad_picks: list[dict] | None = None,
@@ -1571,6 +1534,8 @@ def build_personal_forecast(
         "targetGameweek": target_gw,
         "rollingWindow": ROLLING_WINDOW,
         "overridesApplied": overrides_applied,
+        # set while the squad is the live week's: saved transfers from before it no longer apply
+        "overridesCutoff": overrides_cutoff,
         "deadlineTime": deadline_time_for_gw(bootstrap, target_gw),
         "squad": {
             "windowPoints": round(squad_window_total, 2),
@@ -1676,7 +1641,9 @@ def main(now: datetime | None = None) -> int:
     # which gameweek's squad the forecast starts from, when not the reviewed one
     squad_from_gw = reverted_from if reverted_from is not None else (squad_gw if squad_gw != based_on_gw else None)
 
-    overrides = load_overrides(based_on_gw)
+    # the live week's deadline once its locked squad is the one we build from
+    overrides_cutoff = deadline_time_for_gw(bootstrap, squad_gw) if squad_gw > based_on_gw else None
+    overrides = load_overrides(based_on_gw, overrides_cutoff)
     squad_ids = [p["element"] for p in squad_picks]
     overrides_applied = 0
     if overrides:
@@ -1707,6 +1674,7 @@ def main(now: datetime | None = None) -> int:
         entry_history,
         squad_ids,
         overrides_applied=overrides_applied,
+        overrides_cutoff=overrides_cutoff,
         season_history=season_history,
         squad_picks=squad_picks,
         squad_entry_history=squad_entry_history,
