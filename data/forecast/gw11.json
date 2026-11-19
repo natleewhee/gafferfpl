@@ -94,7 +94,7 @@
   "deadlineTime": "2026-11-21T11:00:00Z",
   "earlySeason": false,
   "effectiveGap": 5.0,
-  "generatedAt": "2026-11-18T11:21:51.491990+00:00",
+  "generatedAt": "2026-11-19T11:20:01.199634+00:00",
   "history": {
     "gameweeks": [
       {
@@ -3409,7 +3409,7 @@
         1,
         null
       ],
-      "selectedByPercent": 1.1,
+      "selectedByPercent": 1.0,
       "sellPrice": 5.9,
       "team": "AVL",
       "total": 18.8,
@@ -3498,7 +3498,7 @@
         4.08
       ],
       "position": "MID",
-      "price": 5.4,
+      "price": 5.5,
       "recentPoints": [
         10,
         1,
@@ -3506,8 +3506,8 @@
         0,
         10
       ],
-      "selectedByPercent": 3.8,
-      "sellPrice": 5.4,
+      "selectedByPercent": 3.9,
+      "sellPrice": 5.5,
       "team": "AVL",
       "total": 28.81,
       "webName": "McGinn"
@@ -4088,7 +4088,7 @@
         2,
         16
       ],
-      "selectedByPercent": 0.2,
+      "selectedByPercent": 0.3,
       "sellPrice": 4.9,
       "team": "AVL",
       "total": 15.23,
@@ -4185,7 +4185,7 @@
         7,
         2
       ],
-      "selectedByPercent": 8.5,
+      "selectedByPercent": 8.4,
       "sellPrice": 6.2,
       "team": "AVL",
       "total": 27.77,
@@ -4584,7 +4584,7 @@
         9,
         11
       ],
-      "selectedByPercent": 31.9,
+      "selectedByPercent": 32.2,
       "sellPrice": 7.1,
       "team": "AVL",
       "total": 31.21,
@@ -4867,7 +4867,7 @@
         3.65
       ],
       "position": "GKP",
-      "price": 5.0,
+      "price": 5.1,
       "recentPoints": [
         2,
         8,
@@ -4876,7 +4876,7 @@
         0
       ],
       "selectedByPercent": 3.2,
-      "sellPrice": 5.0,
+      "sellPrice": 5.1,
       "team": "AVL",
       "total": 25.12,
       "webName": "Suzuki"
@@ -5845,7 +5845,7 @@
         6,
         4
       ],
-      "selectedByPercent": 3.1,
+      "selectedByPercent": 3.2,
       "sellPrice": 5.6,
       "team": "BOU",
       "total": 29.45,
@@ -6633,7 +6633,7 @@
         3,
         3
       ],
-      "selectedByPercent": 31.6,
+      "selectedByPercent": 31.7,
       "sellPrice": 6.7,
       "team": "BOU",
       "total": 34.21,
@@ -7700,7 +7700,7 @@
         9,
         9
       ],
-      "selectedByPercent": 24.2,
+      "selectedByPercent": 24.4,
       "sellPrice": 6.5,
       "team": "BOU",
       "total": 35.73,
@@ -9355,7 +9355,7 @@
         3,
         1
       ],
-      "selectedByPercent": 12.8,
+      "selectedByPercent": 12.7,
       "sellPrice": 6.1,
       "team": "BRE",
       "total": 22.66,
@@ -10337,7 +10337,7 @@
         9,
         -2
       ],
-      "selectedByPercent": 7.9,
+      "selectedByPercent": 7.8,
       "sellPrice": 7.8,
       "team": "BRE",
       "total": 14.83,
@@ -11113,7 +11113,7 @@
         11,
         6
       ],
-      "selectedByPercent": 24.0,
+      "selectedByPercent": 24.1,
       "sellPrice": 4.7,
       "team": "BHA",
       "total": 25.58,
@@ -11507,7 +11507,7 @@
         9,
         6
       ],
-      "selectedByPercent": 48.1,
+      "selectedByPercent": 48.2,
       "sellPrice": 5.5,
       "team": "BHA",
       "total": 30.74,
@@ -12289,7 +12289,7 @@
         2,
         10
       ],
-      "selectedByPercent": 48.3,
+      "selectedByPercent": 48.4,
       "sellPrice": 6.3,
       "team": "BHA",
       "total": 34.09,
@@ -12378,7 +12378,7 @@
         1.77
       ],
       "position": "FWD",
-      "price": 5.3,
+      "price": 5.2,
       "recentPoints": [
         4,
         1,
@@ -12387,7 +12387,7 @@
         1
       ],
       "selectedByPercent": 0.4,
-      "sellPrice": 5.3,
+      "sellPrice": 5.2,
       "team": "BHA",
       "total": 12.86,
       "webName": "Georginio"
@@ -12572,7 +12572,7 @@
         3.94
       ],
       "position": "MID",
-      "price": 5.0,
+      "price": 5.1,
       "recentPoints": [
         5,
         8,
@@ -12580,8 +12580,8 @@
         3,
         9
       ],
-      "selectedByPercent": 4.3,
-      "sellPrice": 5.0,
+      "selectedByPercent": 4.4,
+      "sellPrice": 5.1,
       "team": "BHA",
       "total": 28.34,
       "webName": "Gomez"
@@ -13453,7 +13453,7 @@
         6,
         12
       ],
-      "selectedByPercent": 9.7,
+      "selectedByPercent": 9.9,
       "sellPrice": 5.3,
       "team": "BHA",
       "total": 27.51,
@@ -13744,7 +13744,7 @@
         1,
         1
       ],
-      "selectedByPercent": 2.7,
+      "selectedByPercent": 2.6,
       "sellPrice": 4.4,
       "team": "BHA",
       "total": 10.22,
@@ -14326,7 +14326,7 @@
         9,
         2
       ],
-      "selectedByPercent": 54.0,
+      "selectedByPercent": 54.1,
       "sellPrice": 8.2,
       "team": "CHE",
       "total": 29.47,
@@ -15393,7 +15393,7 @@
         3,
         1
       ],
-      "selectedByPercent": 5.0,
+      "selectedByPercent": 4.9,
       "sellPrice": 6.6,
       "team": "CHE",
       "total": 27.1,
@@ -15975,7 +15975,7 @@
         null,
         null
       ],
-      "selectedByPercent": 31.2,
+      "selectedByPercent": 31.0,
       "sellPrice": 7.6,
       "team": "CHE",
       "total": 10.66,
@@ -16971,7 +16971,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 3.0,
+      "form": 3.7,
       "id": 91,
       "opponents": [
         [
@@ -17068,7 +17068,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 0.5,
+      "form": 0.3,
       "id": 104,
       "opponents": [
         [
@@ -17165,7 +17165,7 @@
         "saves": 0.58
       },
       "elementType": 1,
-      "form": 1.8,
+      "form": 2.0,
       "id": 110,
       "opponents": [
         [
@@ -17359,7 +17359,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 1.0,
+      "form": 0.3,
       "id": 173,
       "opponents": [
         [
@@ -17456,7 +17456,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 2.0,
+      "form": 2.3,
       "id": 175,
       "opponents": [
         [
@@ -17553,7 +17553,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 1.2,
+      "form": 1.7,
       "id": 176,
       "opponents": [
         [
@@ -17650,7 +17650,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 0.2,
+      "form": 0.0,
       "id": 177,
       "opponents": [
         [
@@ -18135,7 +18135,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 4.8,
+      "form": 4.3,
       "id": 183,
       "opponents": [
         [
@@ -18232,7 +18232,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 1.5,
+      "form": 1.3,
       "id": 184,
       "opponents": [
         [
@@ -18329,7 +18329,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 3.0,
+      "form": 3.3,
       "id": 185,
       "opponents": [
         [
@@ -18426,7 +18426,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 0.5,
+      "form": 0.3,
       "id": 186,
       "opponents": [
         [
@@ -18620,7 +18620,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 2.0,
+      "form": 2.7,
       "id": 188,
       "opponents": [
         [
@@ -18814,7 +18814,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 0.2,
+      "form": 0.3,
       "id": 190,
       "opponents": [
         [
@@ -19008,7 +19008,7 @@
         "saves": 0.0
       },
       "elementType": 4,
-      "form": 2.2,
+      "form": 1.3,
       "id": 194,
       "opponents": [
         [
@@ -19202,7 +19202,7 @@
         "saves": 0.0
       },
       "elementType": 4,
-      "form": 3.2,
+      "form": 4.0,
       "id": 492,
       "opponents": [
         [
@@ -19299,7 +19299,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 1.5,
+      "form": 2.0,
       "id": 575,
       "opponents": [
         [
@@ -19396,7 +19396,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 0.8,
+      "form": 0.7,
       "id": 584,
       "opponents": [
         [
@@ -19493,7 +19493,7 @@
         "saves": 0.0
       },
       "elementType": 4,
-      "form": 1.2,
+      "form": 1.3,
       "id": 599,
       "opponents": [
         [
@@ -19687,7 +19687,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 2.5,
+      "form": 3.3,
       "id": 655,
       "opponents": [
         [
@@ -19790,7 +19790,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 1.5,
+      "form": 2.0,
       "id": 656,
       "opponents": [
         [
@@ -22993,7 +22993,7 @@
         7,
         3
       ],
-      "selectedByPercent": 8.5,
+      "selectedByPercent": 8.4,
       "sellPrice": 5.5,
       "team": "EVE",
       "total": 24.38,
@@ -24653,7 +24653,7 @@
         9,
         16
       ],
-      "selectedByPercent": 10.9,
+      "selectedByPercent": 11.0,
       "sellPrice": 5.7,
       "team": "EVE",
       "total": 32.88,
@@ -24944,7 +24944,7 @@
         2,
         3
       ],
-      "selectedByPercent": 4.4,
+      "selectedByPercent": 4.3,
       "sellPrice": 4.5,
       "team": "FUL",
       "total": 23.3,
@@ -26779,7 +26779,7 @@
         3.43
       ],
       "position": "FWD",
-      "price": 5.9,
+      "price": 5.8,
       "recentPoints": [
         2,
         2,
@@ -26787,8 +26787,8 @@
         2,
         2
       ],
-      "selectedByPercent": 3.6,
-      "sellPrice": 5.9,
+      "selectedByPercent": 3.5,
+      "sellPrice": 5.8,
       "team": "FUL",
       "total": 23.37,
       "webName": "Gonzalo"
@@ -27466,7 +27466,7 @@
         8,
         2
       ],
-      "selectedByPercent": 0.0,
+      "selectedByPercent": 0.1,
       "sellPrice": 5.0,
       "team": "HUL",
       "total": 18.59,
@@ -28436,7 +28436,7 @@
         5,
         null
       ],
-      "selectedByPercent": 9.4,
+      "selectedByPercent": 9.3,
       "sellPrice": 5.3,
       "team": "HUL",
       "total": 15.27,
@@ -31449,7 +31449,7 @@
         1,
         -1
       ],
-      "selectedByPercent": 6.6,
+      "selectedByPercent": 6.5,
       "sellPrice": 4.0,
       "team": "IPS",
       "total": 16.6,
@@ -34947,7 +34947,7 @@
         2,
         2
       ],
-      "selectedByPercent": 17.4,
+      "selectedByPercent": 17.3,
       "sellPrice": 6.0,
       "team": "LEE",
       "total": 27.7,
@@ -36499,7 +36499,7 @@
         1,
         4
       ],
-      "selectedByPercent": 14.7,
+      "selectedByPercent": 14.6,
       "sellPrice": 6.4,
       "team": "LIV",
       "total": 26.71,
@@ -37372,7 +37372,7 @@
         2,
         13
       ],
-      "selectedByPercent": 5.9,
+      "selectedByPercent": 6.0,
       "sellPrice": 7.2,
       "team": "LIV",
       "total": 32.02,
@@ -38340,7 +38340,7 @@
         0.07
       ],
       "position": "MID",
-      "price": 4.4,
+      "price": 4.3,
       "recentPoints": [
         null,
         null,
@@ -38349,7 +38349,7 @@
         null
       ],
       "selectedByPercent": 0.2,
-      "sellPrice": 4.4,
+      "sellPrice": 4.3,
       "team": "LIV",
       "total": 0.56,
       "webName": "McConnell"
@@ -38445,7 +38445,7 @@
         2,
         8
       ],
-      "selectedByPercent": 25.3,
+      "selectedByPercent": 25.4,
       "sellPrice": 9.3,
       "team": "LIV",
       "total": 35.09,
@@ -39512,7 +39512,7 @@
         null,
         0
       ],
-      "selectedByPercent": 13.8,
+      "selectedByPercent": 13.7,
       "sellPrice": 6.0,
       "team": "MCI",
       "total": 14.15,
@@ -39803,7 +39803,7 @@
         2,
         0
       ],
-      "selectedByPercent": 22.2,
+      "selectedByPercent": 21.9,
       "sellPrice": 5.6,
       "team": "MCI",
       "total": 17.87,
@@ -45241,7 +45241,7 @@
         2,
         4
       ],
-      "selectedByPercent": 18.1,
+      "selectedByPercent": 18.0,
       "sellPrice": 5.2,
       "team": "NEW",
       "total": 25.06,
@@ -45435,7 +45435,7 @@
         2,
         2
       ],
-      "selectedByPercent": 6.5,
+      "selectedByPercent": 6.4,
       "sellPrice": 6.0,
       "team": "NEW",
       "total": 30.78,
@@ -46308,7 +46308,7 @@
         1,
         2
       ],
-      "selectedByPercent": 8.2,
+      "selectedByPercent": 8.1,
       "sellPrice": 5.9,
       "team": "NEW",
       "total": 24.98,
@@ -47763,7 +47763,7 @@
         1,
         2
       ],
-      "selectedByPercent": 5.3,
+      "selectedByPercent": 5.2,
       "sellPrice": 4.9,
       "team": "NFO",
       "total": 21.33,
@@ -49735,7 +49735,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 7.5,
+      "form": 8.7,
       "id": 112,
       "opponents": [
         [
@@ -49806,7 +49806,7 @@
         15,
         4
       ],
-      "selectedByPercent": 15.1,
+      "selectedByPercent": 15.4,
       "sellPrice": 5.1,
       "team": "TOT",
       "total": 28.39,
@@ -49832,7 +49832,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 0.5,
+      "form": 0.0,
       "id": 147,
       "opponents": [
         [
@@ -49940,7 +49940,7 @@
         "saves": 0.0
       },
       "elementType": 4,
-      "form": 3.8,
+      "form": 2.0,
       "id": 401,
       "opponents": [
         [
@@ -50134,7 +50134,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 3.2,
+      "form": 3.0,
       "id": 455,
       "opponents": [
         [
@@ -50328,7 +50328,7 @@
         "saves": 0.74
       },
       "elementType": 1,
-      "form": 4.8,
+      "form": 5.7,
       "id": 496,
       "opponents": [
         [
@@ -50399,7 +50399,7 @@
         6,
         2
       ],
-      "selectedByPercent": 15.6,
+      "selectedByPercent": 15.7,
       "sellPrice": 4.4,
       "team": "TOT",
       "total": 21.66,
@@ -50619,7 +50619,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 1.8,
+      "form": 2.3,
       "id": 499,
       "opponents": [
         [
@@ -50716,7 +50716,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 5.2,
+      "form": 5.3,
       "id": 502,
       "opponents": [
         [
@@ -50813,7 +50813,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 3.5,
+      "form": 4.0,
       "id": 503,
       "opponents": [
         [
@@ -50910,7 +50910,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 0.2,
+      "form": 0.3,
       "id": 506,
       "opponents": [
         [
@@ -51007,7 +51007,7 @@
         "saves": 0.0
       },
       "elementType": 2,
-      "form": 2.0,
+      "form": 0.3,
       "id": 508,
       "opponents": [
         [
@@ -51298,7 +51298,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 4.5,
+      "form": 4.0,
       "id": 512,
       "opponents": [
         [
@@ -51492,7 +51492,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 4.0,
+      "form": 5.0,
       "id": 514,
       "opponents": [
         [
@@ -51589,7 +51589,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 2.5,
+      "form": 0.3,
       "id": 515,
       "opponents": [
         [
@@ -51686,7 +51686,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 0.2,
+      "form": 0.3,
       "id": 516,
       "opponents": [
         [
@@ -51880,7 +51880,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 0.8,
+      "form": 0.7,
       "id": 519,
       "opponents": [
         [
@@ -52171,7 +52171,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 3.0,
+      "form": 3.3,
       "id": 522,
       "opponents": [
         [
@@ -52365,7 +52365,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 4.0,
+      "form": 5.0,
       "id": 525,
       "opponents": [
         [
@@ -52462,7 +52462,7 @@
         "saves": 0.0
       },
       "elementType": 4,
-      "form": 2.0,
+      "form": 1.3,
       "id": 526,
       "opponents": [
         [
@@ -52662,7 +52662,7 @@
         "saves": 0.0
       },
       "elementType": 3,
-      "form": 0.5,
+      "form": 0.7,
       "id": 601,
       "opponents": [
         [
@@ -53714,7 +53714,7 @@
         4,
         5
       ],
-      "selectedByPercent": 2.4,
+      "selectedByPercent": 2.5,
       "sellPrice": 3.9,
       "team": "SUN",
       "total": 15.03,
@@ -53908,7 +53908,7 @@
         8,
         11
       ],
-      "selectedByPercent": 2.8,
+      "selectedByPercent": 2.9,
       "sellPrice": 5.7,
       "team": "SUN",
       "total": 30.31,
@@ -62853,10 +62853,10 @@
         "price": 4.7,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 96,
+          "hourlyRate": 142,
           "likelihood": 1,
-          "netTransfers": 39491,
-          "percent": 2.0
+          "netTransfers": 41690,
+          "percent": 2.6
         },
         "projectedPoints": 3.6,
         "provisional": false,
@@ -62938,10 +62938,10 @@
         "price": 5.9,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 38,
+          "hourlyRate": 60,
           "likelihood": 1,
-          "netTransfers": 35505,
-          "percent": 7.3
+          "netTransfers": 35862,
+          "percent": 8.1
         },
         "projectedPoints": 3.61,
         "provisional": false,
@@ -63023,10 +63023,10 @@
         "price": 4.9,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 420,
+          "hourlyRate": 490,
           "likelihood": 1,
-          "netTransfers": 151684,
-          "percent": 4.2
+          "netTransfers": 161798,
+          "percent": 6.8
         },
         "projectedPoints": 4.63,
         "provisional": false,
@@ -63108,10 +63108,10 @@
         "price": 5.5,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 709,
+          "hourlyRate": 908,
           "likelihood": 2,
-          "netTransfers": 176604,
-          "percent": 22.6
+          "netTransfers": 192981,
+          "percent": 26.8
         },
         "projectedPoints": 4.1,
         "provisional": false,
@@ -63193,10 +63193,10 @@
         "price": 5.1,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 1119,
+          "hourlyRate": 1781,
           "likelihood": 2,
-          "netTransfers": 212764,
-          "percent": 23.3
+          "netTransfers": 240065,
+          "percent": 30.3
         },
         "projectedPoints": 4.86,
         "provisional": false,
@@ -63278,10 +63278,10 @@
         "price": 6.7,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 68,
+          "hourlyRate": 98,
           "likelihood": -2,
-          "netTransfers": 18260,
-          "percent": -32.5
+          "netTransfers": 19641,
+          "percent": -31.5
         },
         "projectedPoints": 4.87,
         "provisional": false,
@@ -63363,10 +63363,10 @@
         "price": 8.2,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 205,
+          "hourlyRate": 272,
           "likelihood": 3,
-          "netTransfers": 46988,
-          "percent": 58.3
+          "netTransfers": 52047,
+          "percent": 61.7
         },
         "projectedPoints": 4.34,
         "provisional": false,
@@ -63454,10 +63454,10 @@
         "price": 6.7,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 377,
+          "hourlyRate": 432,
           "likelihood": 2,
-          "netTransfers": 124898,
-          "percent": 22.5
+          "netTransfers": 133320,
+          "percent": 24.6
         },
         "projectedPoints": 5.15,
         "provisional": false,
@@ -63545,10 +63545,10 @@
         "price": 6.3,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 497,
+          "hourlyRate": 552,
           "likelihood": 2,
-          "netTransfers": 117824,
-          "percent": 29.5
+          "netTransfers": 128140,
+          "percent": 32.1
         },
         "projectedPoints": 4.57,
         "provisional": false,
@@ -63630,10 +63630,10 @@
         "price": 7.1,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 1586,
-          "likelihood": 3,
-          "netTransfers": 373420,
-          "percent": 85.5
+          "hourlyRate": 1971,
+          "likelihood": 5,
+          "netTransfers": 410460,
+          "percent": 95.4
         },
         "projectedPoints": 4.49,
         "provisional": false,
@@ -63715,10 +63715,10 @@
         "price": 15.8,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 13,
+          "hourlyRate": 6,
           "likelihood": 1,
-          "netTransfers": -27633,
-          "percent": 16.5
+          "netTransfers": -27352,
+          "percent": 16.7
         },
         "projectedPoints": 6.99,
         "provisional": false,
@@ -63800,10 +63800,10 @@
         "price": 4.4,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 74,
-          "likelihood": 2,
-          "netTransfers": 15893,
-          "percent": 37.9
+          "hourlyRate": 124,
+          "likelihood": 3,
+          "netTransfers": 18052,
+          "percent": 39.3
         },
         "projectedPoints": 3.32,
         "provisional": false,
@@ -63885,10 +63885,10 @@
         "price": 5.5,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": -179,
+          "hourlyRate": -189,
           "likelihood": -3,
-          "netTransfers": -25613,
-          "percent": -77.4
+          "netTransfers": -29049,
+          "percent": -86.2
         },
         "projectedPoints": 2.91,
         "provisional": false,
@@ -63970,10 +63970,10 @@
         "price": 9.3,
         "priceWatch": {
           "changeThisGw": 1,
-          "hourlyRate": 395,
+          "hourlyRate": 512,
           "likelihood": 1,
-          "netTransfers": 121972,
-          "percent": 15.7
+          "netTransfers": 131114,
+          "percent": 18.0
         },
         "projectedPoints": 5.29,
         "provisional": false,
@@ -64055,10 +64055,10 @@
         "price": 5.1,
         "priceWatch": {
           "changeThisGw": 0,
-          "hourlyRate": 82,
+          "hourlyRate": 109,
           "likelihood": 2,
-          "netTransfers": 36141,
-          "percent": 25.5
+          "netTransfers": 38876,
+          "percent": 26.8
         },
         "projectedPoints": 3.13,
         "provisional": true,
