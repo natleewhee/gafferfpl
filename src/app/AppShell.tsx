@@ -34,6 +34,7 @@ import AppTabs from "./AppTabs";
 import TeamTab from "./TeamTab";
 import AboutSheet from "./AboutSheet";
 import { problemReport } from "@/lib/problemReport";
+import { latestFrameStats } from "@/lib/frameBudget";
 import {
   CLIENT_TIMEOUT_MS,
   INVALID_TEAM_ID_MESSAGE,
@@ -51,7 +52,7 @@ import CaptainShortlist from "./CaptainShortlist";
 import FixtureTicker from "./FixtureTicker";
 import { liveTransfers, type PendingTransfer } from "@/lib/transfers";
 import type { TransferTools } from "./ReplaceSheet";
-import { readShownPitchView, setPitchAmbient, setPitchView, usePitch3dUnavailable, usePitchAmbient, useShownPitchView, usePrefersReducedMotion } from "@/lib/pitchView";
+import { readShownPitchView, setPitchAmbient, setPitchView, usePitch3dFallback, usePitch3dUnavailable, usePitchAmbient, useShownPitchView, usePrefersReducedMotion } from "@/lib/pitchView";
 
 const MENU_ITEMS = "[role=menuitem],[role=menuitemcheckbox]";
 
@@ -117,6 +118,7 @@ async function copyProblemReport(ctx: { teamId: string | null; build?: string | 
     userAgent: navigator.userAgent,
     viewport: { width: window.innerWidth, height: window.innerHeight, dpr: Math.round(window.devicePixelRatio * 10) / 10 },
     pitch: readShownPitchView(),
+    frames: latestFrameStats(),
     now: new Date(),
   });
   try {
@@ -234,6 +236,7 @@ function TeamMenu({
   // what the pitches actually show: 2D if 3D couldn't start on this device this visit
   const pitchView = useShownPitchView();
   const no3d = usePitch3dUnavailable();
+  const fallback = usePitch3dFallback();
   const passing = usePitchAmbient();
   const reducedMotion = usePrefersReducedMotion();
 
@@ -310,9 +313,9 @@ function TeamMenu({
               aria-checked={pitchView === "3d"}
               className={itemClass}
               onClick={() => setPitchView(pitchView === "3d" ? "2d" : "3d")}
-              title={no3d ? "3D couldn't start on this device. Tap to try again." : undefined}
+              title={no3d ? (fallback === "slow" ? "3D was too slow on this device. Tap to try again." : "3D couldn't start on this device. Tap to try again.") : undefined}
             >
-              <span className="flex-1">{no3d ? "3D pitch (not available here)" : "3D pitch"}</span>
+              <span className="flex-1">{no3d ? (fallback === "slow" ? "3D pitch (too slow here)" : "3D pitch (not available here)") : "3D pitch"}</span>
               <span aria-hidden className="text-ink-faint">{no3d ? "Retry" : pitchView === "3d" ? "On" : "Off"}</span>
             </button>
             {pitchView === "3d" && !reducedMotion && (

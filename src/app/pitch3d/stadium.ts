@@ -11,14 +11,8 @@ export const PITCH_HALF_L = 18;
 /** The goal line, where the markings end (20px margin on the 470 x 768 texture). */
 export const GOAL_LINE = PITCH_HALF_L - (20 / 768) * 36;
 
-/** Whether a device should skip the crowd: few cores, little memory, or data saver on. */
-export function lowPowerDevice(nav: { hardwareConcurrency?: number; deviceMemory?: number; connection?: { saveData?: boolean } } | undefined): boolean {
-  if (!nav) return true;
-  if (nav.connection?.saveData) return true;
-  if (nav.deviceMemory != null && nav.deviceMemory <= 2) return true;
-  if (nav.hardwareConcurrency != null && nav.hardwareConcurrency <= 4) return true;
-  return false;
-}
+/** Whether a device should skip the crowd (moved to src/lib/device.ts, which the 2D/3D default also uses). */
+export { lowPowerDevice } from "@/lib/device";
 
 /** How far the back of the net bellies out at time t (s) after a goal, at a point u, v (0..1 across
  * and up the net). A ripple that starts where the ball hit and dies away within RIPPLE_SECONDS. */

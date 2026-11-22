@@ -256,6 +256,25 @@ test.describe("Squad and Scenarios tabs", () => {
     await expect(pitches).toHaveCount(before);
   });
 
+  test("a phone that draws the 3D pitch too slowly gets the 2D pitch, says why, and can try 3D again", async ({ page }) => {
+    await page.addInitScript(() => {
+      try { localStorage.setItem("fpl-pitch-view", "3d"); } catch {}
+      // a slow phone: every animation frame arrives 90 ms late (about 11 frames a second)
+      const raf = window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = (cb) => raf(() => setTimeout(() => cb(performance.now()), 90));
+    });
+    await mockLive(page, { current: "a" });
+    await page.goto("/?tab=squad");
+    const pitch = page.getByTestId("pitch3d").first();
+    await pitch.scrollIntoViewIfNeeded();
+    await expect(page.getByText(/3D was too slow on this phone, so you’re seeing the 2D pitch/).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("pitch3d")).toHaveCount(0);
+    // the saved choice is untouched, and the menu says why and offers 3D again
+    expect(await page.evaluate(() => localStorage.getItem("fpl-pitch-view"))).toBe("3d");
+    await page.getByRole("button", { name: "Team options" }).click();
+    await expect(page.getByRole("menuitemcheckbox", { name: /3D pitch \(too slow here\)/ })).toBeVisible();
+  });
+
   test("Scenarios: the 3D pitch is not built until a row is opened", async ({ page }) => {
     await page.addInitScript(() => {
       try { localStorage.setItem("fpl-pitch-view", "3d"); } catch {}

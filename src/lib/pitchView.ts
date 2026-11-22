@@ -2,17 +2,24 @@
 
 import { useSyncExternalStore } from "react";
 import { readItem, writeItem } from "./storage";
+import { startIn2d } from "./device";
 
 /* Whether the Squad pitch is drawn in 3D or as the flat 2D pitch. Remembered on
- * this device; 3D is the default. A device that cannot run WebGL falls back to 2D
- * for that visit without changing the saved choice. */
+ * this device. With no choice saved, 3D is the default, except on a device that
+ * looks very low-powered (startIn2d). A device that cannot run WebGL, or draws the
+ * 3D pitch too slowly (frameBudget.ts), falls back to 2D for that visit without
+ * changing the saved choice. */
 
 export type PitchView = "3d" | "2d";
 const KEY = "fpl-pitch-view";
 const listeners = new Set<() => void>();
 
 function read(): PitchView {
-  return readItem(KEY) === "2d" ? "2d" : "3d";
+  const saved = readItem(KEY);
+  if (saved === "2d" || saved === "3d") return saved;
+  return startIn2d(typeof navigator === "undefined" ? undefined : (navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } }))
+    ? "2d"
+    : "3d";
 }
 
 function subscribe(cb: () => void) {
@@ -30,25 +37,37 @@ export function usePitchView(): PitchView {
 
 export function setPitchView(view: PitchView) {
   writeItem(KEY, view);
-  if (view === "3d") unavailable3d = false; // choosing 3D again is a retry
+  if (view === "3d") unavailable3d = null; // choosing 3D again is a retry
   listeners.forEach((l) => l());
 }
 
-/* Whether a 3D pitch failed to start on this device this visit (no WebGL). Shared, so every
- * pitch shows 2D and the menu can say so; not saved, so the next visit tries again. */
-let unavailable3d = false;
+/* Whether a 3D pitch fell back to 2D on this device this visit, and why: it couldn't start
+ * (no WebGL), or it drew too slowly. Shared, so every pitch shows 2D and the menu can say so;
+ * not saved, so the next visit tries again. */
+export type Pitch3dFallback = "unavailable" | "slow";
+let unavailable3d: Pitch3dFallback | null = null;
 
 export function usePitch3dUnavailable(): boolean {
-  return useSyncExternalStore(subscribe, () => unavailable3d, () => false);
+  return useSyncExternalStore(subscribe, () => unavailable3d !== null, () => false);
+}
+
+export function usePitch3dFallback(): Pitch3dFallback | null {
+  return useSyncExternalStore(subscribe, () => unavailable3d, () => null);
 }
 
 export function markPitch3dUnavailable() {
-  if (unavailable3d) return;
-  unavailable3d = true;
+  if (unavailable3d === "unavailable") return;
+  unavailable3d = "unavailable";
   listeners.forEach((l) => l());
 }
 
-/** The view a pitch actually shows: the saved choice, or 2D when 3D can't start here. */
+export function markPitch3dSlow() {
+  if (unavailable3d) return;
+  unavailable3d = "slow";
+  listeners.forEach((l) => l());
+}
+
+/** The view a pitch actually shows: the saved choice, or 2D when 3D can't start (or keep up) here. */
 export function readShownPitchView(): PitchView {
   return unavailable3d ? "2d" : read();
 }

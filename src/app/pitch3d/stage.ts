@@ -24,6 +24,7 @@ import {
   type Shot,
 } from "./moves";
 import { buildStadium, lowPowerDevice } from "./stadium";
+import { FrameBudget } from "@/lib/frameBudget";
 import { ballShadow, sharedPitchCanvas, sharedShadowCanvas, sharedSkyCanvas } from "./look";
 
 /* The 3D Squad pitch: stylised low-poly figures in kit colours on a floodlit
@@ -355,6 +356,7 @@ export type StageOptions = {
   onState?(state: StageState): void;
   onPass?(count: number): void; // how many passes so far; kept apart from onState so a pass does not re-render the page
   ambient?: boolean; // start with the passing on (default true)
+  onSlow?(): void; // the device draws this stage too slowly (see src/lib/frameBudget.ts); called at most once
 };
 
 /** Create the scene on a canvas of its own (so a remount never reuses a lost context).
@@ -903,6 +905,7 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
     return active ? 2 : passing ? 1 : 0;
   }
 
+  const budget = new FrameBudget();
   function frame(ts: number) {
     raf = 0;
     if (disposed || !size.w) return;
@@ -910,6 +913,10 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
     if (ambientOnly && lastTs && ts - lastTs < 30) {
       raf = requestAnimationFrame(frame);
       return;
+    }
+    if (lastTs) {
+      const verdict = budget.record(ts - lastTs);
+      if (verdict?.slow) opts.onSlow?.();
     }
     const dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 1 / 60;
     lastTs = ts;

@@ -17,6 +17,8 @@ export type ReportContext = {
   userAgent: string;
   viewport: { width: number; height: number; dpr: number };
   pitch?: string | null;
+  /** The 3D pitch's measured frame times on this device (frameBudget.ts), if it has drawn enough. */
+  frames?: { frames: number; medianMs: number; slow: boolean } | null;
   now: Date;
 };
 
@@ -40,6 +42,7 @@ export function problemReport(c: ReportContext, note = ""): string {
     `Forecast: ${gw}${c.forecastBuiltAt ? `, built ${c.forecastBuiltAt}` : ""}`,
     `Build: ${c.build ?? "unknown"}`,
     `Device: ${shortDevice(c.userAgent)}, ${c.viewport.width}x${c.viewport.height} @${c.viewport.dpr}x${c.pitch ? `, pitch ${c.pitch}` : ""}`,
+    ...(c.frames ? [`3D frames: median ${c.frames.medianMs} ms over ${c.frames.frames}${c.frames.slow ? " (too slow, switched to 2D)" : ""}`] : []),
     `Time: ${c.now.toISOString()}`,
     `Page: ${c.url}`,
   ];
