@@ -52,6 +52,26 @@ def test_client_ip_prefers_vercels_real_ip_header():
     assert client_ip({}) == "unknown"
 
 
+def test_the_apps_own_server_can_pass_on_the_visitors_address():
+    from engine.ratelimit import internal_key
+
+    secret = "a-long-random-owner-secret"
+    server = {"x-real-ip": "76.76.21.21", "x-gaffer-internal": internal_key(secret), "x-gaffer-client-ip": "1.2.3.4"}
+    assert client_ip(server, secret=secret) == "1.2.3.4"
+    # anyone else sending the header without the key is counted by their own address
+    forged = {**server, "x-gaffer-internal": "guess"}
+    assert client_ip(forged, secret=secret) == "76.76.21.21"
+    # with no OWNER_SECRET there is no key to match, so the header is never believed
+    assert client_ip(server, secret="") == "76.76.21.21"
+
+
+def test_the_key_matches_the_servers():
+    """src/lib/internalCall.ts computes the same sha256; this pins the format both sides use."""
+    from engine.ratelimit import internal_key
+
+    assert internal_key("s") == "2ee61914b5a1fa19a98507798593fe7cc7ec1dec529a50b2487b301ce7a471c4"  # same value pinned in tests/unit/rateLimit.test.ts
+
+
 def _handler(module, path="/", headers=None, body=b""):
     h = object.__new__(module.handler)
     h.path = path

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { NextRequest } from "next/server";
 import { FailureLimiter, clientIp } from "@/lib/rateLimit";
 import { RATE_LIMITED_MESSAGE, forecastErrorMessage } from "@/lib/forecastErrors";
+import { CLIENT_IP_HEADER, INTERNAL_KEY_HEADER, internalForecastHeaders, internalKey } from "@/lib/internalCall";
 
 test("wrong keys are counted per address and blocked past the limit", () => {
   let now = 0;
@@ -45,4 +46,13 @@ test("POST /api/owner refuses after 10 wrong keys from one address, even with th
   assert.equal(blocked.status, 429);
   assert.ok(Number(blocked.headers.get("retry-after")) > 0);
   assert.equal((await post(process.env.OWNER_SECRET, "8.8.8.8")).status, 200, "other addresses are unaffected");
+});
+
+test("server-to-forecast calls pass on the visitor's address with a key only the server knows", () => {
+  assert.equal(internalKey("s"), "2ee61914b5a1fa19a98507798593fe7cc7ec1dec529a50b2487b301ce7a471c4"); // same value pinned in tests/test_ratelimit.py
+  const visitor = new Headers({ "x-real-ip": "1.2.3.4" });
+  const h = internalForecastHeaders(visitor, { OWNER_SECRET: "s" });
+  assert.equal(h[INTERNAL_KEY_HEADER], internalKey("s"));
+  assert.equal(h[CLIENT_IP_HEADER], "1.2.3.4");
+  assert.deepEqual(internalForecastHeaders(visitor, {}), {}, "no OWNER_SECRET, nothing to vouch with");
 });

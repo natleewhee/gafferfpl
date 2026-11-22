@@ -15,6 +15,9 @@ team cost nothing against the limit.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import os
 import time
 from collections import OrderedDict
 from typing import Mapping
@@ -23,10 +26,30 @@ from typing import Mapping
 MAX_KEYS = 5000
 
 
-def client_ip(headers: Mapping[str, str] | object) -> str:
+INTERNAL_KEY_HEADER = "x-gaffer-internal"
+CLIENT_IP_HEADER = "x-gaffer-client-ip"
+
+
+def internal_key(secret: str) -> str:
+    """Must match src/lib/internalCall.ts's internalKey()."""
+    return hashlib.sha256(f"gaffer-internal:{secret}".encode()).hexdigest()
+
+
+def client_ip(headers: Mapping[str, str] | object, secret: str | None = None) -> str:
     """The caller's address as Vercel reports it. Vercel sets `x-real-ip` and
-    overwrites `x-forwarded-for`, so a caller can't choose their own key."""
+    overwrites `x-forwarded-for`, so a caller can't choose their own key.
+
+    The app's own server routes (/api/live, /api/league) call this function on a
+    guest's behalf from Vercel's address; they send the guest's address in
+    `x-gaffer-client-ip` with a key derived from OWNER_SECRET, so each guest is
+    counted on their own (see src/lib/internalCall.ts). Without the right key
+    that header is ignored."""
     get = getattr(headers, "get")
+    secret = os.environ.get("OWNER_SECRET") if secret is None else secret
+    given = (get(INTERNAL_KEY_HEADER) or "").strip()
+    forwarded_for = (get(CLIENT_IP_HEADER) or "").strip()
+    if secret and given and forwarded_for and hmac.compare_digest(given, internal_key(secret)):
+        return forwarded_for
     real = (get("x-real-ip") or "").strip()
     if real:
         return real
