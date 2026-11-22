@@ -81,6 +81,11 @@ for (const width of [360, 390]) {
     await expect(more).toHaveAttribute("aria-expanded", "true");
     await expect(list.locator("li")).toHaveCount(3);
     await expect(list.locator("li").first()).toContainText("% owned overall");
+    // More also says why: each candidate's fixture, from the payload's own opponents
+    const pickWhy = list.locator("li[data-pick=true]").getByTestId("captain-why");
+    await expect(pickWhy).toBeVisible();
+    await expect(pickWhy.locator("li").first()).toHaveText(/^(Plays (@|home to )[A-Z]{3}|Two games|No game this gameweek)/);
+    expect(await pickWhy.locator("li").count()).toBeLessThanOrEqual(3);
     await expect(page.getByText(/^Captain · GW/)).toHaveCount(0); // the old card is gone
     expect(await noSideScroll(page)).toBeLessThanOrEqual(1);
     await list.scrollIntoViewIfNeeded();
@@ -406,4 +411,18 @@ test("Scenarios: the free-transfer count opens a week-by-week replay", async ({ 
   await expect(rows).toHaveCount(3);
   await expect(rows.nth(1)).toContainText("Wildcard, bank kept");
   await expect(rows.nth(2)).toContainText("2 held, 1 made");
+});
+
+test("Scenarios: a suggested transfer says why, from the pool's own numbers, when asked", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?tab=scenarios");
+  const ask = page.getByRole("button", { name: /^Why (this|these) transfers?\?$/ }).first();
+  await ask.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("transfer-why")).toHaveCount(0); // folded by default
+  expect((await ask.boundingBox())!.height, "44px tap rule").toBeGreaterThanOrEqual(43.5);
+  await ask.click();
+  const why = page.getByTestId("transfer-why").first();
+  await expect(why).toBeVisible();
+  await expect(why.locator("li").first()).toHaveText(/^[+−]\d+\.\d xP (this gameweek|over the next \d gameweeks) \(\d+\.\d vs \d+\.\d\)$/);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(1);
 });

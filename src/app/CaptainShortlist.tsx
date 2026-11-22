@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Forecast } from "@/lib/snapshots";
 import { buildCaptainShortlist } from "@/lib/captainShortlist";
+import { captainReasons } from "@/lib/whyThisPick";
 import { lineupFor, resolveSwaps, type PendingSwap } from "@/lib/squadView";
 import { Module } from "./PageChrome";
 
@@ -23,6 +24,7 @@ export default function CaptainShortlist({
   const { swaps, appliedOut } = resolved;
   const s = buildCaptainShortlist(forecast, swaps, appliedOut, 3, lineupFor(forecast, resolved));
   if (!s) return null;
+  const poolById = new Map((pool ?? forecast.pool ?? []).map((p) => [p.id, p]));
   // Two rows by default; the model's pick is always one of them. The rest, and each row's
   // range / ownership / form, sit behind "More".
   const pickIdx = s.candidates.findIndex((c) => c.isModelPick);
@@ -66,6 +68,16 @@ export default function CaptainShortlist({
                 </>
               )}
             </div>
+            {more && (() => {
+              const why = captainReasons(poolById.get(c.id));
+              return why.length > 0 ? (
+                <ul className="mt-1 list-disc pl-5 text-xs leading-snug text-ink-soft" data-testid="captain-why">
+                  {why.map((r) => (
+                    <li key={r}>{r}</li>
+                  ))}
+                </ul>
+              ) : null;
+            })()}
           </li>
         ))}
       </ol>
@@ -86,7 +98,7 @@ export default function CaptainShortlist({
         onClick={() => setMore((m) => !m)}
         className="inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border border-line px-3 text-xs font-medium text-ink-soft hover:border-border-strong"
       >
-        <span>{more ? "Less" : `More${hiddenCount > 0 ? `: ${hiddenCount} more pick${hiddenCount === 1 ? "" : "s"}, ` : ": "}range, ownership, form`}</span>
+        <span>{more ? "Less" : `More${hiddenCount > 0 ? `: ${hiddenCount} more pick${hiddenCount === 1 ? "" : "s"}, ` : ": "}why, range, ownership, form`}</span>
         <span aria-hidden>{more ? "▴" : "▾"}</span>
       </button>
       {more && (
