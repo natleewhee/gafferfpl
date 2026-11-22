@@ -69,3 +69,38 @@ test("a live squad is only used when it is for a gameweek after the one the mode
   assert.equal(usableLiveSquad(null, 9), null);
   assert.equal(usableLiveSquad({ gameweek: 10, chip: null, squad: [] }, 9), null);
 });
+
+test("a Wildcard: new starters take starters' places and new bench players take bench places", () => {
+  // the model started Hall (2) and benched Konsa (3); after a Wildcard both are gone. FPL lists the new men
+  // in the order they were picked, so the bench defender (Gvardiol, slot 14) comes first in the list.
+  const pool2 = [...pool, { id: 9, position: "DEF", webName: "Gvardiol" }];
+  const live = [
+    { id: 1, position: "GKP", slot: 1 },
+    { id: 9, position: "DEF", webName: "Gvardiol", slot: 14 },
+    { id: 6, position: "DEF", webName: "Van Hecke", slot: 2 },
+    { id: 4, position: "MID", slot: 3 },
+    { id: 5, position: "FWD", slot: 4 },
+  ];
+  const starters = new Set([1, 2, 4, 5]);
+  const r = squadSync(model, live, pool2, starters);
+  const pairs = Object.fromEntries(r.swaps.map((s) => [s.outName, s.incoming.webName]));
+  assert.deepEqual(pairs, { Hall: "Van Hecke", Konsa: "Gvardiol" });
+  // without the starting information it falls back to list order, as before
+  const plain = squadSync(model, live.map((p) => ({ id: p.id, position: p.position, webName: p.webName })), pool2, starters);
+  assert.deepEqual(Object.fromEntries(plain.swaps.map((s) => [s.outName, s.incoming.webName])), { Hall: "Gvardiol", Konsa: "Van Hecke" });
+});
+
+test("a Wildcard with more new starters than old ones at a position still pairs everyone at that position", () => {
+  const pool2 = [...pool, { id: 9, position: "DEF", webName: "Gvardiol" }];
+  const live = [
+    { id: 1, position: "GKP", slot: 1 },
+    { id: 6, position: "DEF", webName: "Van Hecke", slot: 2 },
+    { id: 9, position: "DEF", webName: "Gvardiol", slot: 3 },
+    { id: 4, position: "MID", slot: 4 },
+    { id: 5, position: "FWD", slot: 5 },
+  ];
+  const r = squadSync(model, live, pool2, new Set([1, 2, 4, 5]));
+  assert.equal(r.swaps.length, 2);
+  assert.deepEqual(new Set(r.swaps.map((s) => s.outName)), new Set(["Hall", "Konsa"]));
+  assert.deepEqual(r.unresolved, []);
+});

@@ -25,6 +25,8 @@ test.beforeEach(async ({ context, page }) => {
   await context.addCookies([{ name: "fpl_team_id", value: OWNER, url: ORIGIN }]);
   await page.addInitScript(() => {
     try { localStorage.setItem("fpl-pitch-view", "2d"); } catch {}
+    // CI draws WebGL in software, slower than any phone: keep the 3D pitch up (see FrameBudget in stage.ts)
+    (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck = true;
   });
   await page.route("**/api/live*", (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "no live data in tests" }) }),
@@ -70,17 +72,22 @@ for (const width of [360, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await openSquad(page);
     const list = page.getByTestId("captain-shortlist");
-    await expect(list.locator("li")).toHaveCount(2);
+    await expect(list.locator(":scope > li")).toHaveCount(2);
     await expect(list.locator("li[data-pick=true]")).toHaveCount(1);
     await expect(list.locator("li[data-pick=true]")).toContainText("Model pick");
-    await expect(list.locator("li").first()).not.toContainText("% owned overall");
+    await expect(list.locator(":scope > li").first()).not.toContainText("% owned overall");
     const more = page.getByTestId("captain-more");
     await expect(more).toHaveAttribute("aria-expanded", "false");
     expect((await more.boundingBox())!.height, "44px tap rule").toBeGreaterThanOrEqual(43.5);
     await more.click();
     await expect(more).toHaveAttribute("aria-expanded", "true");
-    await expect(list.locator("li")).toHaveCount(3);
-    await expect(list.locator("li").first()).toContainText("% owned overall");
+    await expect(list.locator(":scope > li")).toHaveCount(3);
+    await expect(list.locator(":scope > li").first()).toContainText("% owned overall");
+    // More also says why: each candidate's fixture, from the payload's own opponents
+    const pickWhy = list.locator("li[data-pick=true]").getByTestId("captain-why");
+    await expect(pickWhy).toBeVisible();
+    await expect(pickWhy.locator("li").first()).toHaveText(/^(Plays (@|home to )[A-Z]{3}|Two games|No game this gameweek)/);
+    expect(await pickWhy.locator("li").count()).toBeLessThanOrEqual(3);
     await expect(page.getByText(/^Captain · GW/)).toHaveCount(0); // the old card is gone
     expect(await noSideScroll(page)).toBeLessThanOrEqual(1);
     await list.scrollIntoViewIfNeeded();
@@ -122,9 +129,9 @@ test("guest: a blank and a double gameweek render, and tapping a row opens the p
   await expect(dbl).toContainText("BUR A");
   expect(await noSideScroll(page)).toBeLessThanOrEqual(1);
   // the shortlist works from the guest payload and shows the double
-  await expect(page.getByTestId("captain-shortlist").locator("li")).toHaveCount(2);
+  await expect(page.getByTestId("captain-shortlist").locator(":scope > li")).toHaveCount(2);
   await page.getByRole("button", { name: /^More/ }).click();
-  await expect(page.getByTestId("captain-shortlist").locator("li")).toHaveCount(3);
+  await expect(page.getByTestId("captain-shortlist").locator(":scope > li")).toHaveCount(3);
   // tap a row: the existing player sheet opens
   const row = ticker.getByRole("button", { name: new RegExp(`^${doubleName}, show breakdown`) });
   await row.click();
@@ -326,7 +333,7 @@ const swapCaptain = (which: "captainId" | "viceCaptainId") => async (page: Page,
 
 test("checklist: when a transfer sells the captain the row follows the pitch's armband and is not 'all clear'", async ({ page, context }) => {
   const sold = await swapCaptain("captainId")(page, context);
-  const pick = (await page.getByTestId("captain-shortlist").locator("li").first().locator("span.truncate").innerText()).split(/\s/)[0]; // the shortlist's top pick wears the armband
+  const pick = (await page.getByTestId("captain-shortlist").locator(":scope > li").first().locator("span.truncate").innerText()).split(/\s/)[0]; // the shortlist's top pick wears the armband
   const row = page.locator("div.flex.items-start", { has: page.getByText("Captain", { exact: true }) });
   await expect(row).toContainText("moved the armband");
   await expect(row).toContainText(pick);
@@ -406,4 +413,18 @@ test("Scenarios: the free-transfer count opens a week-by-week replay", async ({ 
   await expect(rows).toHaveCount(3);
   await expect(rows.nth(1)).toContainText("Wildcard, bank kept");
   await expect(rows.nth(2)).toContainText("2 held, 1 made");
+});
+
+test("Scenarios: a suggested transfer says why, from the pool's own numbers, when asked", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?tab=scenarios");
+  const ask = page.getByRole("button", { name: /^Why (this|these) transfers?\?$/ }).first();
+  await ask.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("transfer-why")).toHaveCount(0); // folded by default
+  expect((await ask.boundingBox())!.height, "44px tap rule").toBeGreaterThanOrEqual(43.5);
+  await ask.click();
+  const why = page.getByTestId("transfer-why").first();
+  await expect(why).toBeVisible();
+  await expect(why.locator("li").first()).toHaveText(/^[+−]\d+\.\d xP (this gameweek|over the next \d gameweeks) \(\d+\.\d vs \d+\.\d\)$/);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(1);
 });

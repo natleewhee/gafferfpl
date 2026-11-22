@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import BottomSheet from "./BottomSheet";
 
 export const ISSUES_URL = "https://github.com/natleewhee/gafferfpl/issues";
@@ -10,8 +11,18 @@ export const ISSUES_URL = "https://github.com/natleewhee/gafferfpl/issues";
  * match what the code really does: the team cookie (teamId.ts) and, in
  * localStorage, display choices (pitchView.ts, faceMode.ts, LeaguesPage), the
  * duel rival (duelClient.ts), the live feed (feedStore.ts) and recap captions
- * (RecapCard). Adding something stored? Add it here too. */
-export default function AboutSheet({ onClose, build }: { onClose: () => void; build?: string | null }) {
+ * (RecapCard) and the last-visit record (sinceLastVisit.ts). Adding something stored? Add it here too. */
+export default function AboutSheet({
+  onClose,
+  onReport,
+  build,
+}: {
+  onClose: () => void;
+  /** Copies the problem report (see src/lib/problemReport.ts); true once it's on the clipboard. */
+  onReport?: () => Promise<boolean>;
+  build?: string | null;
+}) {
+  const [reported, setReported] = useState<"" | "copied" | "failed">("");
   return (
     <BottomSheet label="About GafferFPL" onClose={onClose}>
       <div className="space-y-3 text-xs text-ink-soft" data-testid="about-sheet">
@@ -39,7 +50,8 @@ export default function AboutSheet({ onClose, build }: { onClose: () => void; bu
             <li>
               In this browser only: your display choices (2D or 3D pitch, ball passing, photos or shirts, the league
               you last opened), the mate you last compared yourself with, this gameweek&apos;s live match events and
-              recently used recap captions.
+              recently used recap captions, and a short record of your last visit&apos;s forecast so the app can say
+              what changed.
             </li>
             <li>No account, no email, no tracking or advertising cookies.</li>
             <li>
@@ -52,6 +64,21 @@ export default function AboutSheet({ onClose, build }: { onClose: () => void; bu
         </section>
         <section className="space-y-1">
           <h3 className="font-semibold text-ink">Something wrong?</h3>
+          {onReport && (
+            <>
+              <p>Copy the details of what&apos;s on your screen, then paste them to whoever sent you the app.</p>
+              <button
+                type="button"
+                onClick={() => void onReport().then((ok) => setReported(ok ? "copied" : "failed"))}
+                className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 font-medium text-ink"
+              >
+                Copy problem details
+              </button>
+              <p role="status" className="min-h-4">
+                {reported === "copied" ? "Copied. Add what happened, then paste it in a message." : reported === "failed" ? "Your browser didn't allow copying." : ""}
+              </p>
+            </>
+          )}
           <p>
             <a
               href={ISSUES_URL}
@@ -59,7 +86,7 @@ export default function AboutSheet({ onClose, build }: { onClose: () => void; bu
               rel="noreferrer"
               className="inline-flex min-h-11 items-center font-medium text-[var(--accent)] underline"
             >
-              Report a problem on GitHub
+              Or report it on GitHub
             </a>
           </p>
         </section>

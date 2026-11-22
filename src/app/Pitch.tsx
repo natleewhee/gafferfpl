@@ -12,7 +12,7 @@ import Pitch3D, { type Pitch3DPlayer } from "./pitch3d/Pitch3D";
 import PreviewSheet from "./PreviewSheet";
 import { lineupFor, resolveSwaps } from "@/lib/squadView";
 import ReplaceSheet, { type TransferTools } from "./ReplaceSheet";
-import { markPitch3dUnavailable, usePitch3dUnavailable, useShownPitchView } from "@/lib/pitchView";
+import { markPitch3dUnavailable, usePitch3dFallback, usePitch3dUnavailable, useShownPitchView } from "@/lib/pitchView";
 import { ArmbandBadge, POSITION_DOT } from "./tokenParts";
 
 function bandLabel(band: { floor: number; ceiling: number; bandProvisional: boolean } | null | undefined) {
@@ -212,6 +212,7 @@ export default function Pitch({
   liveSquad?: { id: number; position: string }[] | null;
 }) {
   const no3d = usePitch3dUnavailable();
+  const fallback = usePitch3dFallback();
   const view = useShownPitchView();
   const { squad, upcoming } = forecast;
   const byId = new Map(squad.players.map((p) => [p.id, p]));
@@ -427,7 +428,13 @@ export default function Pitch({
             {view === "2d" && <FaceToggle />}
           </div>
         </div>
-        {no3d && <p className="mb-2 text-xs text-ink-faint">3D isn&rsquo;t available on this device, so you&rsquo;re seeing the 2D pitch.</p>}
+        {no3d && (
+          <p className="mb-2 text-xs text-ink-faint">
+            {fallback === "slow"
+              ? "3D was too slow on this phone, so you’re seeing the 2D pitch. Team options can switch 3D back on."
+              : "3D isn’t available on this device, so you’re seeing the 2D pitch."}
+          </p>
+        )}
 
         {sync.swaps.length > 0 && (
           <div

@@ -19,6 +19,8 @@ test.beforeEach(async ({ context, page }) => {
   // the Squad pitch opens in 3D by default; most tests below drive the flat 2D tokens
   await page.addInitScript(() => {
     try { if (!localStorage.getItem("fpl-pitch-view")) localStorage.setItem("fpl-pitch-view", "2d"); } catch {}
+    // CI draws WebGL in software, slower than any phone: keep the 3D pitch up (see FrameBudget in stage.ts)
+    (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck = true;
   });
   // a recap with a week picker, so the Live tab always has its scrolling chip row;
   // unmocked, CI would reach FPL's real API and tests would depend on its data
@@ -92,7 +94,7 @@ async function open(page: Page) {
 }
 
 /** Opens the team bar's overflow menu and taps one item ("Copy link" or "Change team"). */
-async function openTeamMenu(page: Page, item: "Copy link" | "Invite a friend" | "Change team" | "About GafferFPL") {
+async function openTeamMenu(page: Page, item: "Copy link" | "Invite a friend" | "Change team" | "Report a problem" | "About GafferFPL") {
   await page.getByRole("button", { name: "Team options" }).click();
   await page.getByRole("menuitem", { name: item }).click();
 }
@@ -254,6 +256,27 @@ test.describe("Squad and Scenarios tabs", () => {
     await expect(pitches).toHaveCount(before + 1);
     await rows.first().click();
     await expect(pitches).toHaveCount(before);
+  });
+
+  test("a phone that draws the 3D pitch too slowly gets the 2D pitch, says why, and can try 3D again", async ({ page }) => {
+    await page.addInitScript(() => {
+      try { localStorage.setItem("fpl-pitch-view", "3d"); } catch {}
+      // this test is the frame check's own: turn it back on
+      (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck = false;
+      // a slow phone: every animation frame arrives 90 ms late (about 11 frames a second)
+      const raf = window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = (cb) => raf(() => setTimeout(() => cb(performance.now()), 90));
+    });
+    await mockLive(page, { current: "a" });
+    await page.goto("/?tab=squad");
+    const pitch = page.getByTestId("pitch3d").first();
+    await pitch.scrollIntoViewIfNeeded();
+    await expect(page.getByText(/3D was too slow on this phone, so you’re seeing the 2D pitch/).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("pitch3d")).toHaveCount(0);
+    // the saved choice is untouched, and the menu says why and offers 3D again
+    expect(await page.evaluate(() => localStorage.getItem("fpl-pitch-view"))).toBe("3d");
+    await page.getByRole("button", { name: "Team options" }).click();
+    await expect(page.getByRole("menuitemcheckbox", { name: /3D pitch \(too slow here\)/ })).toBeVisible();
   });
 
   test("Scenarios: the 3D pitch is not built until a row is opened", async ({ page }) => {
@@ -864,7 +887,7 @@ test.describe("Team bar overflow menu", () => {
     await page.keyboard.press("Enter");
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const items = page.getByRole("menuitem");
-    await expect(items).toHaveText(["Copy link", "Invite a friend", "Change team", "About GafferFPL"]);
+    await expect(items).toHaveText(["Copy link", "Invite a friend", "Change team", "Report a problem", "About GafferFPL"]);
     for (const box of await items.all()) expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(items.first()).toBeFocused(); // keyboard lands inside the menu
     await page.keyboard.press("ArrowDown");
@@ -926,12 +949,52 @@ test.describe("Team bar overflow menu", () => {
       await expect(sheet).toBeVisible();
       await expect(sheet).toContainText("not made by, endorsed by or affiliated with the Premier League");
       await expect(sheet).toContainText("cookie");
-      const report = sheet.getByRole("link", { name: "Report a problem on GitHub" });
+      const report = sheet.getByRole("link", { name: "Or report it on GitHub" });
       expect((await report.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       await page.keyboard.press("Escape");
       await expect(sheet).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Team options" })).toBeFocused(); // focus comes back
     }
+  });
+
+  test("Since your last visit: nothing on a first visit, one line once the forecast has moved on", async ({ page }) => {
+    await mockLive(page, { current: "a" });
+    await open(page);
+    await expect(page.getByTestId("since-last-visit")).toHaveCount(0);
+    // what this browser saw last time, an older build for an earlier gameweek
+    await page.evaluate(() =>
+      localStorage.setItem("gaffer-last-visit:1168513", JSON.stringify({ builtAt: "old", gameweek: 1, captainId: null, players: {} })),
+    );
+    await page.reload();
+    const line = page.getByTestId("since-last-visit");
+    await expect(line).toHaveText(/^Since your last visit: Now forecasting GW\d+/);
+    // a reload of the same build keeps it (it compares with the build before, not with itself)
+    await page.reload();
+    await expect(page.getByTestId("since-last-visit")).toHaveText(/Now forecasting GW\d+/);
+  });
+
+  test("Report a problem copies what's on screen to the clipboard, and sends nothing", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN });
+    await mockLive(page, { current: "a" });
+    await open(page);
+    await openTab(page, "Scenarios");
+    const sent: string[] = [];
+    page.on("request", (r) => { if (r.method() !== "GET") sent.push(r.url()); });
+    await openTeamMenu(page, "Report a problem");
+    await expect(page.getByRole("banner").getByRole("status")).toHaveText("Details copied");
+    const text = await page.evaluate(() => navigator.clipboard.readText());
+    expect(text).toMatch(/^GafferFPL problem report/);
+    expect(text).toContain("Team ID: 1168513");
+    expect(text).toContain("Screen: Scenarios");
+    expect(text).toMatch(/Forecast: GW\d+/);
+    expect(text).toMatch(/Device: .+, \d+x\d+ @/);
+    expect(sent).toEqual([]);
+    // also from About, on the Team tab, where it names the half on screen
+    await openTab(page, "Live");
+    await openTeamMenu(page, "About GafferFPL");
+    await page.getByRole("dialog", { name: "About GafferFPL" }).getByRole("button", { name: "Copy problem details" }).click();
+    await expect(page.getByRole("dialog", { name: "About GafferFPL" }).getByRole("status")).toContainText("Copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/Screen: Team · (now|next)/);
   });
 
   test("choosing Change team twice keeps the field open and focused", async ({ page }) => {
@@ -1429,7 +1492,11 @@ test.describe("3D Squad pitch", () => {
   test("the 2D switch shows the flat pitch and the choice is remembered", async ({ page }) => {
     await page.goto("/?tab=squad");
     await expect(squadPitch3d(page)).toBeVisible();
-    await page.evaluate(() => localStorage.removeItem("fpl-pitch-view"));
+    // no saved choice, on a device that isn't low-powered (the default for those is 2D; next test)
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8, configurable: true });
+      localStorage.removeItem("fpl-pitch-view");
+    });
     await page.getByTestId("team-menu-button").click();
     const item = page.getByRole("menuitemcheckbox", { name: /3D pitch/ });
     await expect(item).toHaveAttribute("aria-checked", "true");
@@ -1437,6 +1504,22 @@ test.describe("3D Squad pitch", () => {
     await expect(page.getByTestId("pitch3d")).toHaveCount(0);
     await expect(page.locator("[data-team-half='next'] .floodlit-pitch").first()).toBeVisible();
     expect(await page.evaluate(() => localStorage.getItem("fpl-pitch-view"))).toBe("2d");
+  });
+
+  test("with no saved choice, a two-core phone starts on the 2D pitch and can still choose 3D", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 2, configurable: true });
+      try { localStorage.removeItem("fpl-pitch-view"); } catch {}
+    });
+    await page.goto("/?tab=squad");
+    await expect(page.locator("[data-team-half='next'] .floodlit-pitch").first()).toBeVisible();
+    await expect(page.getByTestId("pitch3d")).toHaveCount(0);
+    await page.getByTestId("team-menu-button").click();
+    const item = page.getByRole("menuitemcheckbox", { name: /3D pitch/ });
+    await expect(item).toHaveAttribute("aria-checked", "false");
+    await item.click();
+    await expect(squadPitch3d(page)).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("fpl-pitch-view"))).toBe("3d");
   });
 
   test("the Live tab draws the same pitch in 3D with live points", async ({ page }) => {

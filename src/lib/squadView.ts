@@ -24,7 +24,7 @@ export type ResolvedSwaps = {
 
 export function resolveSwaps(
   forecast: Pick<Forecast, "squad" | "pool">,
-  liveSquad: { id: number; position: string }[] | null | undefined,
+  liveSquad: { id: number; position: string; slot?: number }[] | null | undefined,
   pending: PendingSwap[] | undefined,
   /** the pool saved transfers are looked up in (the owner's transfer tools carry their own) */
   pendingPool?: PoolPlayer[],
@@ -37,6 +37,7 @@ export function resolveSwaps(
     forecast.squad.players.map((p) => ({ id: p.id, position: p.position, webName: p.webName })),
     liveSquad ?? null,
     forecast.pool ?? [],
+    new Set(forecast.squad.startingXi),
   );
   const appliedOut = new Set<number>();
   for (const a of sync.swaps) {

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { lookFor, type PitchKits, type PitchLooks, type Position } from "@/lib/appearance";
-import { usePitchAmbient, usePrefersReducedMotion } from "@/lib/pitchView";
+import { markPitch3dSlow, usePitchAmbient, usePrefersReducedMotion } from "@/lib/pitchView";
 import { decideCelebration, type CelebrationEvent } from "./celebrate";
 import { formationSpots, SENT_OFF_X, SENT_OFF_Z } from "./spots";
 import type { FigureDef, StageHandle, StageState } from "./stage";
@@ -183,6 +183,8 @@ export default function Pitch3D({
             if (rootRef.current) rootRef.current.dataset.passes = String(n);
           },
           ambient: passingRef.current,
+          // too slow here: every pitch switches to 2D for this visit (the menu says why and offers 3D again)
+          onSlow: markPitch3dSlow,
           onPick: (id) => {
             const el = rootRef.current?.querySelector<HTMLButtonElement>(`button[data-tag="${id}"]`);
             if (el) onSelectRef.current?.(id, el);

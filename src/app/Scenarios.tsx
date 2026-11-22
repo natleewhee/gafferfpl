@@ -15,6 +15,7 @@ import type {
   UpcomingGameweek,
 } from "@/lib/snapshots";
 import { availabilityFlag } from "@/lib/availability";
+import { transferReasons } from "@/lib/whyThisPick";
 import { OppChip, riskBadges } from "./Pitch";
 import { bestWithinWindow, chipState, type ChipState } from "@/lib/chips";
 import { PitchScene } from "./PitchScene";
@@ -145,21 +146,48 @@ function pairSwaps(transfersIn: ScenarioPlayerRef[], transfersOut: ScenarioPlaye
 function TransferPairs({
   transfersIn,
   transfersOut,
+  why,
 }: {
   transfersIn: ScenarioPlayerRef[];
   transfersOut: ScenarioPlayerRef[];
+  /** With these, a collapsed "Why?" lists up to 3 reasons per swap (see whyThisPick.ts). */
+  why?: { poolById: Map<number, PoolPlayer>; weeks: number[]; span?: string };
 }) {
+  const [open, setOpen] = useState(false);
   const pairs = pairTransfers({ transfersIn, transfersOut });
   if (pairs.length === 0) return <p className="text-xs text-ink-faint">No changes to your squad</p>;
+  const reasons = why
+    ? pairs.map(({ out, in_ }) => transferReasons(why.poolById.get(out.id), why.poolById.get(in_.id), why.weeks, why.span))
+    : [];
+  const hasWhy = reasons.some((r) => r.length > 0);
   return (
     <div className="space-y-1.5">
-      {pairs.map(({ out, in_ }) => (
-        <div key={`${out.id}-${in_.id}`} className="flex flex-wrap items-center gap-1.5 text-xs">
-          <SwapPlayer player={out} direction="out" />
-          <span className="text-ink-faint">→</span>
-          <SwapPlayer player={in_} direction="in" />
+      {pairs.map(({ out, in_ }, i) => (
+        <div key={`${out.id}-${in_.id}`} className="space-y-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <SwapPlayer player={out} direction="out" />
+            <span className="text-ink-faint">→</span>
+            <SwapPlayer player={in_} direction="in" />
+          </div>
+          {open && reasons[i]?.length > 0 && (
+            <ul className="list-disc pl-5 text-xs leading-snug text-ink-soft" data-testid="transfer-why">
+              {reasons[i].map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          )}
         </div>
       ))}
+      {hasWhy && (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex min-h-11 items-center text-xs font-medium text-ink-soft underline"
+        >
+          {open ? "Hide reasons" : pairs.length === 1 ? "Why this transfer?" : "Why these transfers?"}
+        </button>
+      )}
     </div>
   );
 }
@@ -339,7 +367,11 @@ function TransferScenarioCard({
       )}
       {nTransfers > 0 && (
         <div className="border-t border-line pt-2">
-          <TransferPairs transfersIn={scenario.transfersIn} transfersOut={scenario.transfersOut} />
+          <TransferPairs
+            transfersIn={scenario.transfersIn}
+            transfersOut={scenario.transfersOut}
+            why={{ poolById, weeks: Array.from({ length: scenario.horizonGws }, (_, i) => i) }}
+          />
         </div>
       )}
       {scenario.weeks.length > 1 && (
@@ -613,7 +645,12 @@ function PlanWeekRow({
       {isOpen && (
         <div className="space-y-2 border-t border-line p-2.5">
           {nTransfers > 0 && (
-            <TransferPairs transfersIn={week.transfersIn} transfersOut={week.transfersOut} />
+            <TransferPairs
+              transfersIn={week.transfersIn}
+              transfersOut={week.transfersOut}
+              // a plan week is the transfer for that week alone: name it, it may not be the next one
+              why={{ poolById, weeks: [week.targetGw - forecastGw], span: `in GW${week.targetGw}` }}
+            />
           )}
           <XiPitch
             squad={week.squad}
