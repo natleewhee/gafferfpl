@@ -42,6 +42,7 @@ import {
   forecastErrorMessage,
   isValidTeamIdInput,
 } from "@/lib/forecastErrors";
+import { inviteShareData } from "@/lib/invite";
 import { STALE_AFTER_HOURS, describeAge, forecastAgeHours, sgDateTime } from "@/lib/time";
 import CaptainShortlist from "./CaptainShortlist";
 import FixtureTicker from "./FixtureTicker";
@@ -106,18 +107,17 @@ function TeamMenu({
   teamName?: string;
   onChangeTeam: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"" | "Link copied" | "Invite copied">("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const copyLink = async () => {
-    const url = `${window.location.origin}${window.location.pathname}?team=${teamId}`;
-    // Web Share API on mobile (a share sheet beats a bare clipboard copy
-    // there); clipboard everywhere else, including a share-sheet cancel.
+  // Web Share API on mobile (a share sheet beats a bare clipboard copy
+  // there); clipboard everywhere else, including a share-sheet cancel.
+  const share = async (data: ShareData & { url: string }, done: "Link copied" | "Invite copied") => {
     if (navigator.share) {
       try {
-        await navigator.share({ url, title: teamName ? `${teamName} on GafferFPL` : "GafferFPL" });
+        await navigator.share(data);
         return;
       } catch {
         // user cancelled the share sheet, or the browser doesn't actually
@@ -125,14 +125,25 @@ function TeamMenu({
       }
     }
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(data.text ? `${data.text} ${data.url}` : data.url);
+      setCopied(done);
+      setTimeout(() => setCopied(""), 2000);
     } catch {
       // clipboard access denied -- nothing more to do silently; the address
       // bar itself already reflects this URL, so it can be copied by hand
     }
   };
+
+  /** This team's link: whoever opens it sees this team. */
+  const copyLink = () =>
+    share(
+      { url: `${window.location.origin}${window.location.pathname}?team=${teamId}`, title: teamName ? `${teamName} on GafferFPL` : "GafferFPL" },
+      "Link copied",
+    );
+
+  /** The app's own address, with no team in it, so a friend lands on the team-ID
+   * screen and sees their own squad, not this one. */
+  const invite = () => share(inviteShareData(window.location.origin, window.location.pathname), "Invite copied");
 
   /** Closes the menu; focus goes back to its button unless something else takes it. */
   const closeMenu = (refocus = true) => {
@@ -198,7 +209,7 @@ function TeamMenu({
     <div className="flex shrink-0 items-center gap-2">
       {/* always mounted, only its text changes, so screen readers announce it */}
       <span role="status" className="text-xs font-medium text-[var(--accent)]">
-        {copied ? "Link copied" : ""}
+        {copied}
       </span>
       <div className="relative" ref={menuRef} onKeyDown={onMenuKeyDown}>
         <button
@@ -235,6 +246,17 @@ function TeamMenu({
               }}
             >
               Copy link
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={itemClass}
+              onClick={() => {
+                closeMenu();
+                void invite();
+              }}
+            >
+              Invite a friend
             </button>
             <button
               type="button"
@@ -472,8 +494,8 @@ function TeamIdGate({
         </Shell>
       </div>
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-        <div className="w-full max-w-sm rounded-2xl border border-line bg-[var(--bg-1)] p-6 shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-4">
+        <div className="max-h-full w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-[var(--bg-1)] p-6 shadow-xl">
           <div className="flex flex-col items-center gap-3 text-center">
             <h1 className="text-lg font-semibold text-ink">Enter your FPL team ID</h1>
             <p className="text-xs text-ink">
@@ -484,15 +506,23 @@ function TeamIdGate({
               Anyone can look up their own team. Saving transfers is only available for this
               app&apos;s own team.
             </p>
-            <p className="text-xs text-ink-soft">
-              Find it in the URL on the FPL site: fantasy.premierleague.com/entry/
-              <span className="text-ink">123456</span>/event/…
-            </p>
+            <div className="w-full rounded-lg border border-line px-3 py-2 text-left text-xs text-ink-soft" data-testid="find-team-id">
+              <p className="font-medium text-ink">Finding your team ID</p>
+              <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+                <li>Open fantasy.premierleague.com in your browser and sign in.</li>
+                <li>Tap <span className="text-ink">Points</span>.</li>
+                <li>
+                  Copy the page address and paste it below. The ID is the number after /entry/, as in
+                  …/entry/<span className="text-ink">123456</span>/event/12.
+                </li>
+              </ol>
+            </div>
             <div className="flex w-full gap-2">
               <input
                 value={draft}
                 onChange={(e) => setDraft(cleanTeamIdInput(e.target.value))}
-                placeholder="e.g. 1168513"
+                placeholder="Team ID or link"
+                // numeric keypad for typing; a pasted Points page link still works (cleanTeamIdInput picks the ID out)
                 inputMode="numeric"
                 autoFocus
                 onKeyDown={(e) => {
@@ -500,12 +530,12 @@ function TeamIdGate({
                 }}
                 aria-label="FPL team ID"
                 aria-describedby={draft && !valid ? "team-id-hint" : undefined}
-                className="h-11 flex-1 rounded-lg border border-line bg-[var(--bg-2)] px-3 text-sm text-ink placeholder:text-ink-faint focus:border-[var(--accent)] focus:outline-none"
+                className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-[var(--bg-2)] px-3 text-sm text-ink placeholder:text-ink-faint focus:border-[var(--accent)] focus:outline-none"
               />
               {/* h-11 (44px, adapt.md's minimum touch target) here too --
                * this is the very first tap a new visitor makes. */}
               <button
-                className="inline-flex h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-ink-soft transition-colors hover:border-border-strong disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-lg border border-line px-3 text-sm font-medium text-ink-soft transition-colors hover:border-border-strong disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!valid || loading}
                 onClick={() => onSubmit(draft)}
               >
