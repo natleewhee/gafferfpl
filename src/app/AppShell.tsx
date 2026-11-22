@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type {
   BootstrapSnapshot,
   Forecast,
@@ -606,7 +606,22 @@ export default function AppShell({
   build?: string | null;
 }) {
   const [aboutOpen, setAboutOpen] = useState(false);
-  const aboutSheet = aboutOpen ? <AboutSheet build={build} onClose={() => setAboutOpen(false)} /> : null;
+  // Focus goes back to what opened About. From Team options that item is gone with the closed menu,
+  // so it goes to the Team options button instead.
+  const aboutOpener = useRef<HTMLElement | null>(null);
+  const openAbout = useCallback(() => {
+    aboutOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setAboutOpen(true);
+  }, []);
+  // stable, so BottomSheet's focus effect doesn't re-run (and steal focus) on every re-render
+  const closeAbout = useCallback(() => {
+    setAboutOpen(false);
+    const back = aboutOpener.current?.isConnected
+      ? aboutOpener.current
+      : document.querySelector<HTMLElement>("[data-testid=team-menu-button]");
+    back?.focus();
+  }, []);
+  const aboutSheet = aboutOpen ? <AboutSheet build={build} onClose={closeAbout} /> : null;
   // `null` means "no team ID cookie yet" -- shown as a prompt, never
   // defaulted to this app's own team, so a stranger's first visit never
   // looks like it's showing them their own squad when it isn't.
@@ -798,7 +813,7 @@ export default function AppShell({
   if (!teamId || !forecast) {
     return (
       <>
-        <TeamIdGate onSubmit={loadTeam} onAbout={() => setAboutOpen(true)} loading={loading} slow={slow} error={error} />
+        <TeamIdGate onSubmit={loadTeam} onAbout={openAbout} loading={loading} slow={slow} error={error} />
         {aboutSheet}
       </>
     );
@@ -907,7 +922,7 @@ export default function AppShell({
   return (
     <>
       <Header
-        actions={<TeamMenu teamId={teamId} teamName={forecast.teamName} onChangeTeam={() => { setError(null); setTeamEditing(true); setTeamFocusTick((t) => t + 1); }} onAbout={() => setAboutOpen(true)} />}
+        actions={<TeamMenu teamId={teamId} teamName={forecast.teamName} onChangeTeam={() => { setError(null); setTeamEditing(true); setTeamFocusTick((t) => t + 1); }} onAbout={openAbout} />}
         subtitle={
           isGuest
             ? `GW${forecast.targetGameweek} · ${forecast.teamName ?? `team ${teamId}`}`

@@ -7,9 +7,10 @@ export const ISSUES_URL = "https://github.com/natleewhee/gafferfpl/issues";
 /** What the app is, where its numbers come from, and what it keeps about a
  * visitor. Opened from Team options and from the first-visit screen, so a
  * friend can read it before typing anything. Every storage line here should
- * match what the code really does: the team cookie (teamId.ts) and the
- * display choices in localStorage (pitchView.ts, faceMode.ts, LeaguesPage,
- * duelClient.ts, RecapCard). */
+ * match what the code really does: the team cookie (teamId.ts) and, in
+ * localStorage, display choices (pitchView.ts, faceMode.ts, LeaguesPage), the
+ * duel rival (duelClient.ts), the live feed (feedStore.ts) and recap captions
+ * (RecapCard). Adding something stored? Add it here too. */
 export default function AboutSheet({ onClose, build }: { onClose: () => void; build?: string | null }) {
   return (
     <BottomSheet label="About GafferFPL" onClose={onClose}>
@@ -36,14 +37,15 @@ export default function AboutSheet({ onClose, build }: { onClose: () => void; bu
           <ul className="list-disc space-y-0.5 pl-4">
             <li>Your team ID, in a cookie in this browser for 180 days, so the app opens on your team.</li>
             <li>
-              Display choices (2D or 3D pitch, ball passing, photos or shirts, the league you last opened), in this
-              browser only.
+              In this browser only: your display choices (2D or 3D pitch, ball passing, photos or shirts, the league
+              you last opened), the mate you last compared yourself with, this gameweek&apos;s live match events and
+              recently used recap captions.
             </li>
             <li>No account, no email, no tracking or advertising cookies.</li>
             <li>
-              The site&apos;s host (Vercel) keeps standard request logs, including IP addresses, for a short time.
-              The app keeps no record of which teams were looked up; a forecast is cached for about 15 minutes so it
-              loads fast the next time.
+              The site&apos;s host (Vercel) keeps standard request logs for a short time, including IP addresses and
+              the team IDs in the addresses requested. The app itself saves no list of teams looked up; a forecast
+              is cached for up to about an hour so it loads fast next time.
             </li>
           </ul>
           <p>To clear it all, clear this site&apos;s data in your browser settings.</p>

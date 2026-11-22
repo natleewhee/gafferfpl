@@ -930,6 +930,7 @@ test.describe("Team bar overflow menu", () => {
       expect((await report.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       await page.keyboard.press("Escape");
       await expect(sheet).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Team options" })).toBeFocused(); // focus comes back
     }
   });
 
@@ -2291,6 +2292,7 @@ test.describe("Guest teams", () => {
     await expect(sheet).toContainText("No account");
     await sheet.getByRole("button", { name: "Close" }).last().click();
     await expect(sheet).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "About GafferFPL and what it keeps" })).toBeFocused();
     await expect(page.getByRole("textbox", { name: "FPL team ID" })).toBeVisible();
   });
 
