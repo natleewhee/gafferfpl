@@ -11,7 +11,7 @@ export const ISSUES_URL = "https://github.com/natleewhee/gafferfpl/issues";
  * match what the code really does: the team cookie (teamId.ts) and, in
  * localStorage, display choices (pitchView.ts, faceMode.ts, LeaguesPage), the
  * duel rival (duelClient.ts), the live feed (feedStore.ts) and recap captions
- * (RecapCard). Adding something stored? Add it here too. */
+ * (RecapCard) and the last-visit record (sinceLastVisit.ts). Adding something stored? Add it here too. */
 export default function AboutSheet({
   onClose,
   onReport,
@@ -50,7 +50,8 @@ export default function AboutSheet({
             <li>
               In this browser only: your display choices (2D or 3D pitch, ball passing, photos or shirts, the league
               you last opened), the mate you last compared yourself with, this gameweek&apos;s live match events and
-              recently used recap captions.
+              recently used recap captions, and a short record of your last visit&apos;s forecast so the app can say
+              what changed.
             </li>
             <li>No account, no email, no tracking or advertising cookies.</li>
             <li>

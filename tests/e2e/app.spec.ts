@@ -934,6 +934,23 @@ test.describe("Team bar overflow menu", () => {
     }
   });
 
+  test("Since your last visit: nothing on a first visit, one line once the forecast has moved on", async ({ page }) => {
+    await mockLive(page, { current: "a" });
+    await open(page);
+    await expect(page.getByTestId("since-last-visit")).toHaveCount(0);
+    // what this browser saw last time, an older build for an earlier gameweek
+    await page.evaluate(() =>
+      localStorage.setItem("gaffer-last-visit:1168513", JSON.stringify({ builtAt: "old", gameweek: 1, captainId: null, players: {} })),
+    );
+    await page.reload();
+    const line = page.getByTestId("since-last-visit");
+    await expect(line).toHaveText(/^Since your last visit: Now forecasting GW\d+/);
+    // and it is not repeated on the visit after
+    await page.reload();
+    await expect(page.getByRole("tab", { name: /^Team$/ })).toBeVisible();
+    await expect(page.getByTestId("since-last-visit")).toHaveCount(0);
+  });
+
   test("Report a problem copies what's on screen to the clipboard, and sends nothing", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN });
     await mockLive(page, { current: "a" });

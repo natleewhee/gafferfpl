@@ -22,6 +22,7 @@ import { usableLiveSquad, type LiveSquadFeed } from "@/lib/squadSync";
 import DeadlineChecklist from "./DeadlineChecklist";
 import DeadlineBanner from "./DeadlineBanner";
 import TransferStatus from "./TransferStatus";
+import SinceLastVisit from "./SinceLastVisit";
 import History from "./History";
 import LiveTracker from "./LiveTracker";
 import LeaguesPage from "./LeaguesPage";
@@ -1004,6 +1005,7 @@ export default function AppShell({
           gameweek={forecast.targetGameweek}
           transfersIn={!isGuest && pendingTransfers.length > 0 && pendingTransfers.every((t) => squadIds.has(t.in) && !squadIds.has(t.out)) ? pendingTransfers.length : 0}
         />
+        <SinceLastVisit teamId={teamId} forecast={forecast} />
         {!isGuest && (
           <TransferStatus
             transfers={pendingTransfers}
