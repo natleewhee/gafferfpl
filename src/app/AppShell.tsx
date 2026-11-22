@@ -32,6 +32,7 @@ import TransferForm from "./TransferForm";
 import AppTabs from "./AppTabs";
 import TeamTab from "./TeamTab";
 import AboutSheet from "./AboutSheet";
+import { problemReport } from "@/lib/problemReport";
 import {
   CLIENT_TIMEOUT_MS,
   INVALID_TEAM_ID_MESSAGE,
@@ -49,7 +50,7 @@ import CaptainShortlist from "./CaptainShortlist";
 import FixtureTicker from "./FixtureTicker";
 import { liveTransfers, type PendingTransfer } from "@/lib/transfers";
 import type { TransferTools } from "./ReplaceSheet";
-import { setPitchAmbient, setPitchView, usePitch3dUnavailable, usePitchAmbient, useShownPitchView, usePrefersReducedMotion } from "@/lib/pitchView";
+import { readShownPitchView, setPitchAmbient, setPitchView, usePitch3dUnavailable, usePitchAmbient, useShownPitchView, usePrefersReducedMotion } from "@/lib/pitchView";
 
 const MENU_ITEMS = "[role=menuitem],[role=menuitemcheckbox]";
 
@@ -99,18 +100,47 @@ function ParCalibrationModule({ calibration }: { calibration: ParCalibration | n
  * 44px menu instead of two pills, so they stay one tap away on every tab
  * without costing a row of screen. A real button (aria-haspopup, aria-expanded);
  * Arrow keys move, Escape closes and returns focus to the button. */
+/** Builds the problem report from what's on screen and puts it on the clipboard. Nothing is sent. */
+async function copyProblemReport(ctx: { teamId: string | null; build?: string | null; forecast: Forecast | null }): Promise<boolean> {
+  const tab = document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() ?? "";
+  const half = tab === "Team" ? document.querySelector<HTMLElement>("[data-team-half]:not([hidden])")?.dataset.teamHalf : undefined;
+  const view = ctx.teamId ? [tab || "unknown tab", half].filter(Boolean).join(" · ") : "Team ID screen";
+  const text = problemReport({
+    teamId: ctx.teamId ?? "",
+    view,
+    targetGameweek: ctx.forecast?.targetGameweek,
+    basedOnGameweek: ctx.forecast?.basedOnGameweek,
+    forecastBuiltAt: ctx.forecast?.generatedAt,
+    build: ctx.build,
+    url: window.location.href,
+    userAgent: navigator.userAgent,
+    viewport: { width: window.innerWidth, height: window.innerHeight, dpr: Math.round(window.devicePixelRatio * 10) / 10 },
+    pitch: readShownPitchView(),
+    now: new Date(),
+  });
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function TeamMenu({
   teamId,
   teamName,
   onChangeTeam,
   onAbout,
+  onReport,
 }: {
   teamId: string;
   teamName?: string;
   onChangeTeam: () => void;
   onAbout: () => void;
+  /** Copies the problem report; resolves true when it reached the clipboard. */
+  onReport: () => Promise<boolean>;
 }) {
-  const [copied, setCopied] = useState<"" | "Link copied" | "Invite copied">("");
+  const [copied, setCopied] = useState<"" | "Link copied" | "Invite copied" | "Details copied">("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -298,6 +328,21 @@ function TeamMenu({
               </button>
             )}
             <div role="separator" className="border-t border-line" />
+            <button
+              type="button"
+              role="menuitem"
+              className={itemClass}
+              onClick={() => {
+                closeMenu();
+                void onReport().then((ok) => {
+                  if (!ok) return;
+                  setCopied("Details copied");
+                  setTimeout(() => setCopied(""), 2500);
+                });
+              }}
+            >
+              Report a problem
+            </button>
             <button
               type="button"
               role="menuitem"
@@ -621,7 +666,13 @@ export default function AppShell({
       : document.querySelector<HTMLElement>("[data-testid=team-menu-button]");
     back?.focus();
   }, []);
-  const aboutSheet = aboutOpen ? <AboutSheet build={build} onClose={closeAbout} /> : null;
+  /* What "Report a problem" copies, read at the moment it's asked for (refs synced below). */
+  const teamIdRef = useRef<string | null>(null);
+  const forecastRef = useRef<Forecast | null>(null);
+  const reportContext = () => ({ teamId: teamIdRef.current, build, forecast: forecastRef.current });
+  const aboutSheet = aboutOpen ? (
+    <AboutSheet build={build} onClose={closeAbout} onReport={() => copyProblemReport(reportContext())} />
+  ) : null;
   // `null` means "no team ID cookie yet" -- shown as a prompt, never
   // defaulted to this app's own team, so a stranger's first visit never
   // looks like it's showing them their own squad when it isn't.
@@ -631,6 +682,10 @@ export default function AppShell({
   // silently overwriting the browser's own saved team.
   const [savedTeamId, setSavedTeamId] = useState<string | null>(null);
   const [forecast, setForecast] = useState<Forecast | null>(null);
+  useEffect(() => {
+    teamIdRef.current = teamId;
+    forecastRef.current = forecast;
+  }, [teamId, forecast]);
   // Whether matches are live right now (reported by the Live tab), so the
   // recap card can fold itself away while there's football to watch.
   const [liveActive, setLiveActive] = useState(false);
@@ -922,7 +977,7 @@ export default function AppShell({
   return (
     <>
       <Header
-        actions={<TeamMenu teamId={teamId} teamName={forecast.teamName} onChangeTeam={() => { setError(null); setTeamEditing(true); setTeamFocusTick((t) => t + 1); }} onAbout={openAbout} />}
+        actions={<TeamMenu teamId={teamId} teamName={forecast.teamName} onChangeTeam={() => { setError(null); setTeamEditing(true); setTeamFocusTick((t) => t + 1); }} onAbout={openAbout} onReport={() => copyProblemReport(reportContext())} />}
         subtitle={
           isGuest
             ? `GW${forecast.targetGameweek} · ${forecast.teamName ?? `team ${teamId}`}`

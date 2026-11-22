@@ -92,7 +92,7 @@ async function open(page: Page) {
 }
 
 /** Opens the team bar's overflow menu and taps one item ("Copy link" or "Change team"). */
-async function openTeamMenu(page: Page, item: "Copy link" | "Invite a friend" | "Change team" | "About GafferFPL") {
+async function openTeamMenu(page: Page, item: "Copy link" | "Invite a friend" | "Change team" | "Report a problem" | "About GafferFPL") {
   await page.getByRole("button", { name: "Team options" }).click();
   await page.getByRole("menuitem", { name: item }).click();
 }
@@ -864,7 +864,7 @@ test.describe("Team bar overflow menu", () => {
     await page.keyboard.press("Enter");
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const items = page.getByRole("menuitem");
-    await expect(items).toHaveText(["Copy link", "Invite a friend", "Change team", "About GafferFPL"]);
+    await expect(items).toHaveText(["Copy link", "Invite a friend", "Change team", "Report a problem", "About GafferFPL"]);
     for (const box of await items.all()) expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(items.first()).toBeFocused(); // keyboard lands inside the menu
     await page.keyboard.press("ArrowDown");
@@ -926,12 +926,36 @@ test.describe("Team bar overflow menu", () => {
       await expect(sheet).toBeVisible();
       await expect(sheet).toContainText("not made by, endorsed by or affiliated with the Premier League");
       await expect(sheet).toContainText("cookie");
-      const report = sheet.getByRole("link", { name: "Report a problem on GitHub" });
+      const report = sheet.getByRole("link", { name: "Or report it on GitHub" });
       expect((await report.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       await page.keyboard.press("Escape");
       await expect(sheet).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Team options" })).toBeFocused(); // focus comes back
     }
+  });
+
+  test("Report a problem copies what's on screen to the clipboard, and sends nothing", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN });
+    await mockLive(page, { current: "a" });
+    await open(page);
+    await openTab(page, "Scenarios");
+    const sent: string[] = [];
+    page.on("request", (r) => { if (r.method() !== "GET") sent.push(r.url()); });
+    await openTeamMenu(page, "Report a problem");
+    await expect(page.getByRole("banner").getByRole("status")).toHaveText("Details copied");
+    const text = await page.evaluate(() => navigator.clipboard.readText());
+    expect(text).toMatch(/^GafferFPL problem report/);
+    expect(text).toContain("Team ID: 1168513");
+    expect(text).toContain("Screen: Scenarios");
+    expect(text).toMatch(/Forecast: GW\d+/);
+    expect(text).toMatch(/Device: .+, \d+x\d+ @/);
+    expect(sent).toEqual([]);
+    // also from About, on the Team tab, where it names the half on screen
+    await openTab(page, "Live");
+    await openTeamMenu(page, "About GafferFPL");
+    await page.getByRole("dialog", { name: "About GafferFPL" }).getByRole("button", { name: "Copy problem details" }).click();
+    await expect(page.getByRole("dialog", { name: "About GafferFPL" }).getByRole("status")).toContainText("Copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/Screen: Team · (now|next)/);
   });
 
   test("choosing Change team twice keeps the field open and focused", async ({ page }) => {
