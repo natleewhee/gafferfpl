@@ -1,0 +1,115 @@
+name: Deploy smoke check
+
+# Two checks after Vercel deploys:
+#  1. After a Production deploy: the live site loads and the guest forecast
+#     answers for a few team IDs. A failure opens one GitHub issue (later
+#     failures comment on it) and the next passing run closes it.
+#  2. After the newest commit on main deploys as a Preview: wait a few minutes,
+#     then check that the same commit also reached Production. If not, Vercel's
+#     Production Branch is probably not `main`, and the live site is behind.
+#
+# Settings (repo Settings > Secrets and variables > Actions > Variables), both optional:
+#   PROD_URL        the production address, default https://fplforecast.vercel.app
+#   SMOKE_TEAM_IDS  real team IDs that have a squad, separated by spaces, default the owner's 1168513
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Site to check (blank = PROD_URL)"
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+  deployments: read
+
+env:
+  PROD_URL: ${{ inputs.url || vars.PROD_URL || 'https://fplforecast.vercel.app' }}
+  SMOKE_TEAM_IDS: ${{ vars.SMOKE_TEAM_IDS || '1168513' }}
+
+jobs:
+  smoke:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/smoke_check.py
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the live site
+        id: check
+        run: python scripts/smoke_check.py "${PROD_URL}" ${SMOKE_TEAM_IDS} | tee smoke.txt; exit "${PIPESTATUS[0]}"
+
+      - name: Raise an issue if the site is broken
+        if: failure() && steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Live site check is failing"
+          url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body=$(printf 'The check after the latest Production deploy failed on %s.\n\n```\n%s\n```\n\nRun: %s' "$(date -u +%Y-%m-%d)" "$(cat smoke.txt)" "${url}")
+          existing=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --author app/github-actions --search "\"${title}\" in:title" --json number --jq '.[0].number' || true)
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --repo "${GITHUB_REPOSITORY}" --body "${body}" || true
+          else
+            gh issue create --repo "${GITHUB_REPOSITORY}" --title "${title}" --body "${body}" || true
+          fi
+
+      - name: Close the issue once the site passes again
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Live site check is failing"
+          existing=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --author app/github-actions --search "\"${title}\" in:title" --json number --jq '.[0].number' || true)
+          if [ -n "${existing}" ]; then
+            gh issue close "${existing}" --repo "${GITHUB_REPOSITORY}" --comment "The live site check passes again: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" || true
+          fi
+
+  production-branch:
+    if: >-
+      github.event_name == 'deployment_status' &&
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Preview'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.deployment.sha }}
+    steps:
+      - name: Check that main's newest commit also reached Production
+        run: |
+          main_sha=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+          if [ "${SHA}" != "${main_sha}" ]; then
+            echo "This Preview is not main's newest commit; nothing to check."
+            exit 0
+          fi
+          # Vercel usually posts the Production deployment a minute or two after the Preview.
+          sleep 300
+          prod=$(gh api "repos/${GITHUB_REPOSITORY}/deployments?sha=${SHA}&environment=Production" --jq 'length')
+          title="main is not deploying to Production"
+          existing=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --author app/github-actions --search "\"${title}\" in:title" --json number --jq '.[0].number' || true)
+          if [ "${prod}" != "0" ]; then
+            echo "Commit ${SHA} reached Production."
+            if [ -n "${existing}" ]; then
+              gh issue close "${existing}" --repo "${GITHUB_REPOSITORY}" --comment "main deployed to Production again (${SHA})." || true
+            fi
+            exit 0
+          fi
+          body="Commit ${SHA}, the newest on main, deployed as a Preview but not to Production within 5 minutes. The live site is probably behind main. In Vercel, open the project's Settings > Environments > Production and set the branch to main, or promote this deployment by hand."
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --repo "${GITHUB_REPOSITORY}" --body "${body}" || true
+          else
+            gh issue create --repo "${GITHUB_REPOSITORY}" --title "${title}" --body "${body}" || true
+          fi
+          exit 1

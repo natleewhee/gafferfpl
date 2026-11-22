@@ -107,7 +107,9 @@ test("guest: a blank and a double gameweek render, and tapping a row opens the p
   await page.route("**/api/forecast*", (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify(guest) }),
   );
-  await page.goto("/?team=999111");
+  // tab=squad opens the Next half, where the ticker lives. Without it the Team tab opens Now once the
+  // committed forecast's deadline has passed, and the hidden ticker can't be tapped (broke on 21 Nov).
+  await page.goto("/?team=999111&tab=squad");
   await page.getByTestId("fixture-ticker").waitFor({ state: "attached" });
   const ticker = page.getByTestId("fixture-ticker");
   await expect(ticker.locator("summary")).toContainText("1 double, 1 blank");
