@@ -1492,7 +1492,11 @@ test.describe("3D Squad pitch", () => {
   test("the 2D switch shows the flat pitch and the choice is remembered", async ({ page }) => {
     await page.goto("/?tab=squad");
     await expect(squadPitch3d(page)).toBeVisible();
-    await page.evaluate(() => localStorage.removeItem("fpl-pitch-view"));
+    // no saved choice, on a device that isn't low-powered (the default for those is 2D; next test)
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8, configurable: true });
+      localStorage.removeItem("fpl-pitch-view");
+    });
     await page.getByTestId("team-menu-button").click();
     const item = page.getByRole("menuitemcheckbox", { name: /3D pitch/ });
     await expect(item).toHaveAttribute("aria-checked", "true");
@@ -1500,6 +1504,22 @@ test.describe("3D Squad pitch", () => {
     await expect(page.getByTestId("pitch3d")).toHaveCount(0);
     await expect(page.locator("[data-team-half='next'] .floodlit-pitch").first()).toBeVisible();
     expect(await page.evaluate(() => localStorage.getItem("fpl-pitch-view"))).toBe("2d");
+  });
+
+  test("with no saved choice, a two-core phone starts on the 2D pitch and can still choose 3D", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 2, configurable: true });
+      try { localStorage.removeItem("fpl-pitch-view"); } catch {}
+    });
+    await page.goto("/?tab=squad");
+    await expect(page.locator("[data-team-half='next'] .floodlit-pitch").first()).toBeVisible();
+    await expect(page.getByTestId("pitch3d")).toHaveCount(0);
+    await page.getByTestId("team-menu-button").click();
+    const item = page.getByRole("menuitemcheckbox", { name: /3D pitch/ });
+    await expect(item).toHaveAttribute("aria-checked", "false");
+    await item.click();
+    await expect(squadPitch3d(page)).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("fpl-pitch-view"))).toBe("3d");
   });
 
   test("the Live tab draws the same pitch in 3D with live points", async ({ page }) => {
