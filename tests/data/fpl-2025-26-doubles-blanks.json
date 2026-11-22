@@ -1,0 +1,230 @@
+{
+ "source": "https://github.com/vaastav/Fantasy-Premier-League/blob/master/data/2025-26/fixtures.csv (with teams.csv for short names), fetched 2026-11-22",
+ "note": "Real 2025/26 Premier League fixtures for GW31 (4 teams blank), GW33 (6 teams double) and GW34 (6 teams blank), as FPL scheduled them. Only the fields the double/blank replay needs.",
+ "fixtures": [
+  {
+   "event": 31,
+   "home": "BOU",
+   "away": "MUN",
+   "home_difficulty": 3,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-03-20T20:00:00Z"
+  },
+  {
+   "event": 31,
+   "home": "BHA",
+   "away": "LIV",
+   "home_difficulty": 3,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-03-21T12:45:00Z"
+  },
+  {
+   "event": 31,
+   "home": "FUL",
+   "away": "BUR",
+   "home_difficulty": 1,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-03-21T15:00:00Z"
+  },
+  {
+   "event": 31,
+   "home": "EVE",
+   "away": "CHE",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-03-21T17:30:00Z"
+  },
+  {
+   "event": 31,
+   "home": "LEE",
+   "away": "BRE",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-03-21T20:00:00Z"
+  },
+  {
+   "event": 31,
+   "home": "NEW",
+   "away": "SUN",
+   "home_difficulty": 2,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-03-22T12:00:00Z"
+  },
+  {
+   "event": 31,
+   "home": "AVL",
+   "away": "WHU",
+   "home_difficulty": 2,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-03-22T14:15:00Z"
+  },
+  {
+   "event": 31,
+   "home": "TOT",
+   "away": "NFO",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-03-22T14:15:00Z"
+  },
+  {
+   "event": 33,
+   "home": "BRE",
+   "away": "FUL",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-18T11:30:00Z"
+  },
+  {
+   "event": 33,
+   "home": "LEE",
+   "away": "WOL",
+   "home_difficulty": 1,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-18T14:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "NEW",
+   "away": "BOU",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-18T14:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "TOT",
+   "away": "BHA",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-18T16:30:00Z"
+  },
+  {
+   "event": 33,
+   "home": "CHE",
+   "away": "MUN",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-18T19:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "AVL",
+   "away": "SUN",
+   "home_difficulty": 2,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-04-19T13:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "EVE",
+   "away": "LIV",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-19T13:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "NFO",
+   "away": "BUR",
+   "home_difficulty": 1,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-19T13:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "MCI",
+   "away": "ARS",
+   "home_difficulty": 4,
+   "away_difficulty": 5,
+   "kickoff_time": "2026-04-19T15:30:00Z"
+  },
+  {
+   "event": 33,
+   "home": "CRY",
+   "away": "WHU",
+   "home_difficulty": 2,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-20T19:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "BHA",
+   "away": "CHE",
+   "home_difficulty": 3,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-04-21T19:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "BOU",
+   "away": "LEE",
+   "home_difficulty": 2,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-04-22T19:00:00Z"
+  },
+  {
+   "event": 33,
+   "home": "BUR",
+   "away": "MCI",
+   "home_difficulty": 4,
+   "away_difficulty": 2,
+   "kickoff_time": "2026-04-22T19:00:00Z"
+  },
+  {
+   "event": 34,
+   "home": "SUN",
+   "away": "NFO",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-24T19:00:00Z"
+  },
+  {
+   "event": 34,
+   "home": "FUL",
+   "away": "AVL",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-25T11:30:00Z"
+  },
+  {
+   "event": 34,
+   "home": "LIV",
+   "away": "CRY",
+   "home_difficulty": 3,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-04-25T14:00:00Z"
+  },
+  {
+   "event": 34,
+   "home": "WHU",
+   "away": "EVE",
+   "home_difficulty": 3,
+   "away_difficulty": 3,
+   "kickoff_time": "2026-04-25T14:00:00Z"
+  },
+  {
+   "event": 34,
+   "home": "WOL",
+   "away": "TOT",
+   "home_difficulty": 3,
+   "away_difficulty": 2,
+   "kickoff_time": "2026-04-25T14:00:00Z"
+  },
+  {
+   "event": 34,
+   "home": "ARS",
+   "away": "NEW",
+   "home_difficulty": 3,
+   "away_difficulty": 5,
+   "kickoff_time": "2026-04-25T16:30:00Z"
+  },
+  {
+   "event": 34,
+   "home": "MUN",
+   "away": "BRE",
+   "home_difficulty": 3,
+   "away_difficulty": 4,
+   "kickoff_time": "2026-04-27T19:00:00Z"
+  }
+ ]
+}
