@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type {
   BootstrapSnapshot,
   Forecast,
@@ -31,6 +31,7 @@ import Scenarios from "./Scenarios";
 import TransferForm from "./TransferForm";
 import AppTabs from "./AppTabs";
 import TeamTab from "./TeamTab";
+import AboutSheet from "./AboutSheet";
 import {
   CLIENT_TIMEOUT_MS,
   INVALID_TEAM_ID_MESSAGE,
@@ -102,10 +103,12 @@ function TeamMenu({
   teamId,
   teamName,
   onChangeTeam,
+  onAbout,
 }: {
   teamId: string;
   teamName?: string;
   onChangeTeam: () => void;
+  onAbout: () => void;
 }) {
   const [copied, setCopied] = useState<"" | "Link copied" | "Invite copied">("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -294,6 +297,18 @@ function TeamMenu({
                 <span aria-hidden className="text-ink-faint">{passing ? "On" : "Off"}</span>
               </button>
             )}
+            <div role="separator" className="border-t border-line" />
+            <button
+              type="button"
+              role="menuitem"
+              className={itemClass}
+              onClick={() => {
+                closeMenu(false);
+                onAbout();
+              }}
+            >
+              About GafferFPL
+            </button>
           </div>
         )}
       </div>
@@ -467,11 +482,13 @@ function StaleForecastBanner({ generatedAt }: { generatedAt: string }) {
  * (KTD-style "don't assume" per the vault's own working rules). */
 function TeamIdGate({
   onSubmit,
+  onAbout,
   loading,
   slow,
   error,
 }: {
   onSubmit: (id: string) => void;
+  onAbout: () => void;
   loading: boolean;
   slow: boolean;
   error: string | null;
@@ -555,6 +572,13 @@ function TeamIdGate({
                 {error}
               </span>
             )}
+            <button
+              type="button"
+              onClick={onAbout}
+              className="inline-flex min-h-11 items-center text-xs text-ink-faint underline"
+            >
+              About GafferFPL and what it keeps
+            </button>
           </div>
         </div>
       </div>
@@ -569,6 +593,7 @@ export default function AppShell({
   pitchLooks,
   pitchKits,
   footer,
+  build,
 }: {
   initialForecast: Forecast;
   bootstrap: BootstrapSnapshot;
@@ -577,7 +602,26 @@ export default function AppShell({
   pitchLooks?: PitchLooks;
   pitchKits?: PitchKits;
   footer: ReactNode;
+  /** Short commit id of this deploy, shown in About so a problem report can name it. */
+  build?: string | null;
 }) {
+  const [aboutOpen, setAboutOpen] = useState(false);
+  // Focus goes back to what opened About. From Team options that item is gone with the closed menu,
+  // so it goes to the Team options button instead.
+  const aboutOpener = useRef<HTMLElement | null>(null);
+  const openAbout = useCallback(() => {
+    aboutOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setAboutOpen(true);
+  }, []);
+  // stable, so BottomSheet's focus effect doesn't re-run (and steal focus) on every re-render
+  const closeAbout = useCallback(() => {
+    setAboutOpen(false);
+    const back = aboutOpener.current?.isConnected
+      ? aboutOpener.current
+      : document.querySelector<HTMLElement>("[data-testid=team-menu-button]");
+    back?.focus();
+  }, []);
+  const aboutSheet = aboutOpen ? <AboutSheet build={build} onClose={closeAbout} /> : null;
   // `null` means "no team ID cookie yet" -- shown as a prompt, never
   // defaulted to this app's own team, so a stranger's first visit never
   // looks like it's showing them their own squad when it isn't.
@@ -767,7 +811,12 @@ export default function AppShell({
       : null;
 
   if (!teamId || !forecast) {
-    return <TeamIdGate onSubmit={loadTeam} loading={loading} slow={slow} error={error} />;
+    return (
+      <>
+        <TeamIdGate onSubmit={loadTeam} onAbout={openAbout} loading={loading} slow={slow} error={error} />
+        {aboutSheet}
+      </>
+    );
   }
 
   // saved for this forecast's week, and not plans for a week whose deadline has since passed
@@ -873,7 +922,7 @@ export default function AppShell({
   return (
     <>
       <Header
-        actions={<TeamMenu teamId={teamId} teamName={forecast.teamName} onChangeTeam={() => { setError(null); setTeamEditing(true); setTeamFocusTick((t) => t + 1); }} />}
+        actions={<TeamMenu teamId={teamId} teamName={forecast.teamName} onChangeTeam={() => { setError(null); setTeamEditing(true); setTeamFocusTick((t) => t + 1); }} onAbout={openAbout} />}
         subtitle={
           isGuest
             ? `GW${forecast.targetGameweek} · ${forecast.teamName ?? `team ${teamId}`}`
@@ -939,6 +988,7 @@ export default function AppShell({
           {!isGuest && footer}
         </div>
       </Shell>
+      {aboutSheet}
     </>
   );
 }

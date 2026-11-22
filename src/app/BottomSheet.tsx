@@ -36,7 +36,8 @@ export default function BottomSheet({
   const compact = peek && !expanded;
 
   useEffect(() => {
-    if (!compact) closeRef.current?.focus();
+    // preventScroll: in a sheet taller than the screen, open at the top, not scrolled down to Close
+    if (!compact) closeRef.current?.focus({ preventScroll: true });
     // opened from the keyboard: the card is at the end of the page, so take focus to it
     else if (document.activeElement?.matches(":focus-visible")) showAllRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -89,7 +90,7 @@ export default function BottomSheet({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={label}>
       <button type="button" aria-label="Close" tabIndex={-1} className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="rise relative w-full max-w-md rounded-t-2xl border border-line bg-[var(--bg-1)] p-4 pb-6 shadow-xl sm:rounded-2xl">
+      <div className="rise relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-line bg-[var(--bg-1)] p-4 pb-6 shadow-xl sm:rounded-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--border-strong)] sm:hidden" aria-hidden />
         {children}
         <button
