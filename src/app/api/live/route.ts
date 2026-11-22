@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         gameweek,
         chip: picks.active_chip ?? null,
-        squad: picks.picks.map((p) => ({ id: p.element, position: positions[typeOf.get(p.element) ?? 0] ?? "MID" })),
+        // slot: FPL's pick position (1-11 starting), so squad sync can keep starters with starters
+        squad: picks.picks.map((p) => ({ id: p.element, position: positions[typeOf.get(p.element) ?? 0] ?? "MID", slot: p.position })),
       });
     }
     const bootstrap = await fpl<FplBootstrap>("/bootstrap-static/");

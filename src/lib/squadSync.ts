@@ -4,7 +4,8 @@
  * at the same position, so the pitch can show your squad as it is now.
  * Pure, so it can be tested without the app. */
 
-export type SquadEntry = { id: number; position: string; webName?: string };
+/** `slot` is the FPL pick position, 1-11 starting and 12-15 bench, when the list comes from FPL's picks. */
+export type SquadEntry = { id: number; position: string; webName?: string; slot?: number };
 export type PoolEntry = { id: number; position: string; webName: string };
 
 export type AppliedSwap<P extends PoolEntry> = { outId: number; outName: string; incoming: P };
@@ -16,8 +17,21 @@ export type SquadSync<P extends PoolEntry> = {
   unresolved: string[];
 };
 
-/** Compare the model's squad with the live one. Null live squad (not loaded, or failed) means no change. */
-export function squadSync<P extends PoolEntry>(model: SquadEntry[], live: SquadEntry[] | null, pool: P[]): SquadSync<P> {
+/** Compare the model's squad with the live one. Null live squad (not loaded, or failed) means no change.
+ *
+ * Pairing: a joiner takes the place of a leaver at his position. With one transfer that is the only
+ * choice. With many (a Wildcard), there are several leavers per position, and pairing by list order put a
+ * manager's new bench defender in a starter's place while their new starter took the bench spot; the
+ * lineup re-pick (pickXi.ts) only moves players for a clear gain, so the pitch could show the wrong
+ * man starting. So a joiner FPL lists as starting (slot 1-11) first looks for a leaver who started in
+ * the model's XI (`modelStarters`), and a bench joiner for a benched leaver; only then any leaver at
+ * his position. */
+export function squadSync<P extends PoolEntry>(
+  model: SquadEntry[],
+  live: SquadEntry[] | null,
+  pool: P[],
+  modelStarters?: ReadonlySet<number>,
+): SquadSync<P> {
   if (!live || live.length === 0) return { swaps: [], unresolved: [] };
   const liveIds = new Set(live.map((p) => p.id));
   const modelIds = new Set(model.map((p) => p.id));
@@ -27,8 +41,11 @@ export function squadSync<P extends PoolEntry>(model: SquadEntry[], live: SquadE
   const swaps: AppliedSwap<P>[] = [];
   const unresolved: string[] = [];
   const free = [...out];
+  const startsLive = (e: SquadEntry) => (e.slot === undefined ? undefined : e.slot <= 11);
   for (const inn of incoming) {
-    const at = free.findIndex((o) => o.position === inn.position);
+    const wantStarter = modelStarters ? startsLive(inn) : undefined;
+    let at = wantStarter === undefined ? -1 : free.findIndex((o) => o.position === inn.position && modelStarters!.has(o.id) === wantStarter);
+    if (at < 0) at = free.findIndex((o) => o.position === inn.position);
     const proj = byId.get(inn.id);
     if (at < 0 || !proj) {
       unresolved.push(inn.webName ?? proj?.webName ?? `#${inn.id}`);
