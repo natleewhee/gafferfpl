@@ -36,6 +36,11 @@ if _ROOT not in sys.path:
 
 from engine.optimise import solve_squad, with_held_rows  # noqa: E402
 from engine.scenario_shape import scenario_to_dict as _scenario_to_dict  # noqa: E402
+from engine.ratelimit import RateLimiter, client_ip, too_many_body  # noqa: E402
+
+# Solves per visitor address per 10 minutes (see engine/ratelimit.py). Each pin or
+# horizon change in Scenarios is one solve, so this is higher than the forecast's.
+SOLVE_LIMIT = RateLimiter(limit=60, window_s=600)
 
 MAX_FORCED_PLAYERS = 15  # can't force in/out more than a full squad
 
@@ -202,6 +207,10 @@ class handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             self._respond(400, {"error": "invalid JSON body"})
             return
+        allowed, retry_after = SOLVE_LIMIT.check(client_ip(getattr(self, "headers", None) or {}))
+        if not allowed:
+            self._respond(429, too_many_body("transfer searches"), retry_after=retry_after)
+            return
         status, payload = solve(body)
         self._respond(status, payload)
 
@@ -215,10 +224,12 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
-    def _respond(self, status: int, payload: dict):
+    def _respond(self, status: int, payload: dict, retry_after: int | None = None):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        if retry_after:
+            self.send_header("Retry-After", str(retry_after))
         self._cors_headers()
         self.end_headers()
         self.wfile.write(body)

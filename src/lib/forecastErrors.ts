@@ -33,6 +33,10 @@ export const TIMEOUT_MESSAGE =
 /** The client gives up a little after the function's own limit (maxDuration 30 in vercel.json). */
 export const CLIENT_TIMEOUT_MS = 35_000;
 
+/** A 429 from api/forecast.py (engine/ratelimit.py) or the platform's firewall. */
+export const RATE_LIMITED_MESSAGE =
+  "Too many team lookups from your connection. Wait a few minutes, then try again.";
+
 export const NETWORK_MESSAGE = "Couldn't reach the server. Check your connection and try again.";
 
 /** `fromApp` is true when the body was JSON with an `error` field, i.e. our own function
@@ -49,6 +53,8 @@ export function forecastErrorMessage(status: number, teamId: string, fromApp = t
       return `FPL has no team with ID ${teamId}. Check the number in your FPL page address and try again.`;
     case 422:
       return `Team ${teamId} has no squad recorded for the last finished gameweek yet. That's usual for a team that joined after it. Check back once the next gameweek finishes.`;
+    case 429:
+      return RATE_LIMITED_MESSAGE;
     case 503:
       return "The first gameweek hasn't finished yet, or the app is updating. Try again later.";
     default:

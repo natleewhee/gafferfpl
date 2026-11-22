@@ -53,6 +53,11 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 import scripts.compute_forecast as compute_forecast  # noqa: E402
+from engine.ratelimit import RateLimiter, client_ip, too_many_body  # noqa: E402
+
+# Builds per visitor address per 10 minutes (CDN hits don't count; see engine/ratelimit.py).
+# A person looking up their own team, then a friend's or two, uses a handful.
+BUILD_LIMIT = RateLimiter(limit=20, window_s=600)
 
 FPL = "https://fantasy.premierleague.com/api"
 DEPLOY_DATA_DIR = Path(_ROOT) / "data-deploy"
@@ -221,6 +226,11 @@ class handler(BaseHTTPRequestHandler):
             self._respond(400, {"error": "teamId must be a positive integer"})
             return
 
+        allowed, retry_after = BUILD_LIMIT.check(client_ip(getattr(self, "headers", None) or {}))
+        if not allowed:
+            self._respond(429, too_many_body("forecast lookups"), retry_after=retry_after)
+            return
+
         try:
             status, payload = build_forecast_for_team(team_id)
         except Exception:  # noqa: BLE001 -- an on-demand lookup should never 500 silently
@@ -240,10 +250,12 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
-    def _respond(self, status: int, payload: dict):
+    def _respond(self, status: int, payload: dict, retry_after: int | None = None):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        if retry_after:
+            self.send_header("Retry-After", str(retry_after))
         if status == 200:
             self.send_header("Cache-Control", "public, s-maxage=900, stale-while-revalidate=3600")
         self._cors_headers()

@@ -55,11 +55,14 @@ export async function guestForecastInputs(
   teamId: string | number,
   url: URL,
   nowMs = Date.now(),
+  /** internalForecastHeaders() for the visitor, so the forecast's rate limit counts them, not the server. */
+  headers: Record<string, string> = {},
 ): Promise<LiveProjectionInputs | null> {
   const key = String(teamId);
   const hit = guestCache.get(key);
   if (hit && nowMs - hit.at < GUEST_FORECAST_TTL_S * 1000) return hit.inputs;
   const res = await fetch(new URL(`/api/forecast?teamId=${key}`, url), {
+    headers,
     next: { revalidate: GUEST_FORECAST_TTL_S },
   });
   if (!res.ok) return null;

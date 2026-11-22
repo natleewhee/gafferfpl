@@ -11,6 +11,7 @@ import {
 } from "@/lib/liveBlend";
 import { OWNER_TEAM_ID, resolveTeamIdFromRequest } from "@/lib/teamId";
 import { internalOrigin } from "@/lib/internalOrigin";
+import { internalForecastHeaders } from "@/lib/internalCall";
 
 export async function GET(req: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     const inputs = liveInputsFor({
       liveGw: gameweek,
       owner,
-      guestInputs: owner ? null : await guestForecastInputs(teamId, new URL(internalOrigin(req.url))),
+      guestInputs: owner ? null : await guestForecastInputs(teamId, new URL(internalOrigin(req.url)), Date.now(), internalForecastHeaders(req.headers)),
     });
     if (!inputs) {
       return NextResponse.json(
