@@ -92,7 +92,7 @@ async function open(page: Page) {
 }
 
 /** Opens the team bar's overflow menu and taps one item ("Copy link" or "Change team"). */
-async function openTeamMenu(page: Page, item: "Copy link" | "Change team") {
+async function openTeamMenu(page: Page, item: "Copy link" | "Invite a friend" | "Change team") {
   await page.getByRole("button", { name: "Team options" }).click();
   await page.getByRole("menuitem", { name: item }).click();
 }
@@ -851,7 +851,7 @@ test.describe("Team bar", () => {
 
 
 test.describe("Team bar overflow menu", () => {
-  test("opens with Copy link and Change team, Escape closes it and returns focus to the button", async ({ page }) => {
+  test("opens with Copy link, Invite a friend and Change team, Escape closes it and returns focus to the button", async ({ page }) => {
     await mockLive(page, { current: "a" });
     await open(page);
     const bar = page.getByRole("banner");
@@ -864,7 +864,7 @@ test.describe("Team bar overflow menu", () => {
     await page.keyboard.press("Enter");
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const items = page.getByRole("menuitem");
-    await expect(items).toHaveText(["Copy link", "Change team"]);
+    await expect(items).toHaveText(["Copy link", "Invite a friend", "Change team"]);
     for (const box of await items.all()) expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(items.first()).toBeFocused(); // keyboard lands inside the menu
     await page.keyboard.press("ArrowDown");
@@ -894,6 +894,25 @@ test.describe("Team bar overflow menu", () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${ORIGIN}/?team=${OWNER}`);
     await openTeamMenu(page, "Change team");
     await expect(page.getByTestId("team-bar").getByRole("textbox", { name: "Team ID" })).toBeFocused();
+  });
+
+  test("Invite a friend copies the app's address with no team in it, and it opens on the team-ID screen", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN });
+    await page.addInitScript(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); });
+    await mockLive(page, { current: "a" });
+    await open(page);
+    await openTeamMenu(page, "Invite a friend");
+    await expect(page.getByRole("banner").getByRole("status")).toHaveText("Invite copied");
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toMatch(/type your team ID/);
+    const url = copied.split(" ").pop()!;
+    expect(url).toBe(`${ORIGIN}/`);
+    // the friend's browser: no cookie, so the invite lands on the gate, not the owner's squad
+    const friend = await context.browser()!.newContext();
+    const friendPage = await friend.newPage();
+    await friendPage.goto(url);
+    await expect(friendPage.getByRole("textbox", { name: "FPL team ID" })).toBeVisible();
+    await friend.close();
   });
 
   test("choosing Change team twice keeps the field open and focused", async ({ page }) => {
@@ -2228,7 +2247,9 @@ test.describe("Guest teams", () => {
     await page.goto("/");
     await expect(page.getByText(/decision tool for managers/)).toBeVisible();
     await expect(page.getByText(/Saving transfers is only available for this app/)).toBeVisible();
+    await expect(page.getByTestId("find-team-id")).toContainText("Points");
     const input = page.getByRole("textbox", { name: "FPL team ID" });
+    await expect(input).not.toHaveAttribute("placeholder", /1168513/); // never suggests the owner's own team
     const go = page.getByRole("button", { name: "View squad" });
     await expect(go).toBeDisabled();
     await input.fill("0123");
@@ -2240,7 +2261,21 @@ test.describe("Guest teams", () => {
     await expect(input).toHaveValue(""); // letters are dropped
     await input.fill("123456789");
     await expect(go).toBeEnabled();
+    await input.fill("https://fantasy.premierleague.com/entry/424242/event/12"); // a pasted Points page link
+    await expect(input).toHaveValue("424242");
     expect(requests).toBe(0);
+  });
+
+  test("the first-visit gate fits a small phone and can be scrolled to its button", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 560 });
+    await page.goto("/");
+    const go = page.getByRole("button", { name: "View squad" });
+    await go.scrollIntoViewIfNeeded();
+    await expect(go).toBeInViewport({ ratio: 1 }); // the whole button, not clipped by the card
+    const box = (await go.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.x + box.width).toBeLessThanOrEqual(360 - 16);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   });
 
   test("a guest never gets the Log a transfer control on Scenarios", async ({ page }) => {
