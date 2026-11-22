@@ -92,7 +92,7 @@ async function open(page: Page) {
 }
 
 /** Opens the team bar's overflow menu and taps one item ("Copy link" or "Change team"). */
-async function openTeamMenu(page: Page, item: "Copy link" | "Invite a friend" | "Change team") {
+async function openTeamMenu(page: Page, item: "Copy link" | "Invite a friend" | "Change team" | "About GafferFPL") {
   await page.getByRole("button", { name: "Team options" }).click();
   await page.getByRole("menuitem", { name: item }).click();
 }
@@ -864,7 +864,7 @@ test.describe("Team bar overflow menu", () => {
     await page.keyboard.press("Enter");
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const items = page.getByRole("menuitem");
-    await expect(items).toHaveText(["Copy link", "Invite a friend", "Change team"]);
+    await expect(items).toHaveText(["Copy link", "Invite a friend", "Change team", "About GafferFPL"]);
     for (const box of await items.all()) expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(items.first()).toBeFocused(); // keyboard lands inside the menu
     await page.keyboard.press("ArrowDown");
@@ -913,6 +913,24 @@ test.describe("Team bar overflow menu", () => {
     await friendPage.goto(url);
     await expect(friendPage.getByRole("textbox", { name: "FPL team ID" })).toBeVisible();
     await friend.close();
+  });
+
+  test("About is two taps from any tab, says it isn't FPL's own app, and closes with Escape", async ({ page }) => {
+    await mockLive(page, { current: "a" });
+    await open(page);
+    for (const tab of ["Live", "Scenarios", "Leagues"] as const) {
+      if (tab === "Leagues") await page.getByRole("tab", { name: /^Leagues$/ }).click();
+      else await openTab(page, tab);
+      await openTeamMenu(page, "About GafferFPL");
+      const sheet = page.getByRole("dialog", { name: "About GafferFPL" });
+      await expect(sheet).toBeVisible();
+      await expect(sheet).toContainText("not made by, endorsed by or affiliated with the Premier League");
+      await expect(sheet).toContainText("cookie");
+      const report = sheet.getByRole("link", { name: "Report a problem on GitHub" });
+      expect((await report.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      await page.keyboard.press("Escape");
+      await expect(sheet).toHaveCount(0);
+    }
   });
 
   test("choosing Change team twice keeps the field open and focused", async ({ page }) => {
@@ -2264,6 +2282,16 @@ test.describe("Guest teams", () => {
     await input.fill("https://fantasy.premierleague.com/entry/424242/event/12"); // a pasted Points page link
     await expect(input).toHaveValue("424242");
     expect(requests).toBe(0);
+  });
+
+  test("a first-time visitor can read About before typing a team ID", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "About GafferFPL and what it keeps" }).click();
+    const sheet = page.getByRole("dialog", { name: "About GafferFPL" });
+    await expect(sheet).toContainText("No account");
+    await sheet.getByRole("button", { name: "Close" }).last().click();
+    await expect(sheet).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "FPL team ID" })).toBeVisible();
   });
 
   test("the first-visit gate fits a small phone and can be scrolled to its button", async ({ page }) => {
