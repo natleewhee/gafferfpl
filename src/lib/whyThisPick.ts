@@ -40,13 +40,15 @@ export function sourceReason(components: PoolPlayer["components"]): string | nul
     .sort((a, b) => (b[1] as number) - (a[1] as number))
     .slice(0, 2);
   if (parts.length === 0) return null;
-  return `Most of his xP from ${parts.map(([k, v]) => `${COMPONENT_LABELS[k]} ${f1(v as number)}`).join(" and ")}`;
+  return `Biggest sources of his xP: ${parts.map(([k, v]) => `${COMPONENT_LABELS[k]} ${f1(v as number)}`).join(" and ")}`;
 }
 
-/** Recent points if the payload has them, else FPL's form figure. */
+/** Recent points if the payload has them (a dash for a week he didn't play), else FPL's form figure. */
 export function formReason(p: Pick<PoolPlayer, "recentPoints" | "form">): string | null {
-  const recent = (p.recentPoints ?? []).filter((x): x is number => x != null);
-  if (recent.length >= 3) return `Last ${recent.length} gameweeks: ${recent.join(", ")} points`;
+  const recent = p.recentPoints ?? [];
+  if (recent.filter((x) => x != null).length >= 3) {
+    return `Last ${recent.length} gameweeks: ${recent.map((x) => (x == null ? "–" : String(x))).join(", ")} points`;
+  }
   if (typeof p.form === "number" && p.form > 0) return `FPL form ${f1(p.form)}`;
   return null;
 }
@@ -66,13 +68,19 @@ function avgFdr(p: PoolPlayer, weeks: number[]): number | null {
 }
 
 /** Why the plan swaps `out` for `inn` over `weeks` (indices into the forecast window). */
-export function transferReasons(out: PoolPlayer | undefined, inn: PoolPlayer | undefined, weeks: number[]): string[] {
+export function transferReasons(
+  out: PoolPlayer | undefined,
+  inn: PoolPlayer | undefined,
+  weeks: number[],
+  /** names the week when it isn't the next one ("in GW14"); defaults to "this gameweek" / "over the next N" */
+  span?: string,
+): string[] {
   if (!out || !inn || weeks.length === 0) return [];
   const reasons: string[] = [];
   const xpIn = sum(weeks.map((w) => inn.perGameweek[w] ?? 0));
   const xpOut = sum(weeks.map((w) => out.perGameweek[w] ?? 0));
-  const span = weeks.length === 1 ? "this gameweek" : `over the next ${weeks.length} gameweeks`;
-  reasons.push(`${xpIn >= xpOut ? "+" : "−"}${f1(Math.abs(xpIn - xpOut))} xP ${span} (${f1(xpIn)} vs ${f1(xpOut)})`);
+  const when = span ?? (weeks.length === 1 ? "this gameweek" : `over the next ${weeks.length} gameweeks`);
+  reasons.push(`${xpIn >= xpOut ? "+" : "−"}${f1(Math.abs(xpIn - xpOut))} xP ${when} (${f1(xpIn)} vs ${f1(xpOut)})`);
   if (flagged(out)) {
     const chance = out.availability.chance;
     reasons.push(`${out.webName} is flagged${chance != null ? ` (${chance}% chance of playing)` : ""}${out.availability.news ? `: ${out.availability.news}` : ""}`);
@@ -83,8 +91,9 @@ export function transferReasons(out: PoolPlayer | undefined, inn: PoolPlayer | u
     reasons.push(`${fIn < fOut ? "Easier" : "Harder"} fixtures: average FDR ${f1(fIn)} vs ${f1(fOut)}`);
   }
   if (reasons.length < 3) {
-    const diff = inn.price - out.sellPrice;
-    if (Math.abs(diff) >= 0.05) reasons.push(diff > 0 ? `Costs £${f1(diff)}m more than ${out.webName} sells for` : `Frees £${f1(-diff)}m in the bank`);
+    // today's prices: FPL's real selling price can be lower after a rise, so this says "price", not "sells for"
+    const diff = inn.price - out.price;
+    if (Math.abs(diff) >= 0.05) reasons.push(diff > 0 ? `£${f1(diff)}m dearer than ${out.webName}` : `£${f1(-diff)}m cheaper than ${out.webName}`);
   }
   return reasons.slice(0, 3);
 }

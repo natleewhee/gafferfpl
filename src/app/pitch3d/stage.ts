@@ -905,7 +905,11 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
     return active ? 2 : passing ? 1 : 0;
   }
 
-  const budget = new FrameBudget();
+  // The browser tests set window.__gafferSkipFrameCheck: CI's Chrome draws WebGL in software, slower
+  // than any phone, and the 3D tests need the 3D pitch to stay up. The test of the check itself unsets it.
+  const budget = (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck
+    ? null
+    : new FrameBudget(performance.now());
   function frame(ts: number) {
     raf = 0;
     if (disposed || !size.w) return;
@@ -914,8 +918,8 @@ function setup(renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement, opts: S
       raf = requestAnimationFrame(frame);
       return;
     }
-    if (lastTs) {
-      const verdict = budget.record(ts - lastTs);
+    if (lastTs && budget) {
+      const verdict = budget.record(ts - lastTs, ts);
       if (verdict?.slow) opts.onSlow?.();
     }
     const dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 1 / 60;

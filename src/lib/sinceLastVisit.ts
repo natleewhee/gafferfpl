@@ -35,6 +35,22 @@ export function snapshotOf(f: ForecastLike): VisitSnapshot {
   return { builtAt: f.generatedAt, gameweek: f.targetGameweek, captainId: f.upcoming[0]?.captainId ?? null, players };
 }
 
+/** What is kept per team: the forecast last shown, and the one before it (see visitChanges). */
+export type VisitRecord = { prev: VisitSnapshot | null; now: VisitSnapshot };
+
+/** The changes to show on this visit, and the record to keep. Reloading the same build (or React
+ * running the effect twice in development) shows the same changes again, compared with the build
+ * before it, rather than comparing the build with itself and showing nothing. */
+export function visitChanges(stored: VisitRecord | VisitSnapshot | null, now: VisitSnapshot): { changes: string[]; keep: VisitRecord } {
+  // an older record held a bare snapshot
+  const record: VisitRecord | null = stored && "now" in stored ? stored : stored ? { prev: null, now: stored as VisitSnapshot } : null;
+  if (record && record.now.builtAt === now.builtAt) {
+    return { changes: changesSince(record.prev, now), keep: { prev: record.prev, now } };
+  }
+  const prev = record?.now ?? null;
+  return { changes: changesSince(prev, now), keep: { prev, now } };
+}
+
 const f1 = (n: number) => n.toFixed(1);
 
 /** The changes worth a line, or [] when there is nothing new (or no earlier visit to compare with). */

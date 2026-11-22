@@ -98,10 +98,6 @@ function ParCalibrationModule({ calibration }: { calibration: ParCalibration | n
   );
 }
 
-/** The header's overflow button: "Copy link" and "Change team" live in this one
- * 44px menu instead of two pills, so they stay one tap away on every tab
- * without costing a row of screen. A real button (aria-haspopup, aria-expanded);
- * Arrow keys move, Escape closes and returns focus to the button. */
 /** Builds the problem report from what's on screen and puts it on the clipboard. Nothing is sent. */
 async function copyProblemReport(ctx: { teamId: string | null; build?: string | null; forecast: Forecast | null }): Promise<boolean> {
   const tab = document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() ?? "";
@@ -129,6 +125,10 @@ async function copyProblemReport(ctx: { teamId: string | null; build?: string | 
   }
 }
 
+/** The header's overflow button: the team links, Report a problem and About live in this one
+ * 44px menu instead of two pills, so they stay one tap away on every tab
+ * without costing a row of screen. A real button (aria-haspopup, aria-expanded);
+ * Arrow keys move, Escape closes and returns focus to the button. */
 function TeamMenu({
   teamId,
   teamName,
@@ -143,7 +143,7 @@ function TeamMenu({
   /** Copies the problem report; resolves true when it reached the clipboard. */
   onReport: () => Promise<boolean>;
 }) {
-  const [copied, setCopied] = useState<"" | "Link copied" | "Invite copied" | "Details copied">("");
+  const [copied, setCopied] = useState<"" | "Link copied" | "Invite copied" | "Details copied" | "Couldn't copy">("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -339,8 +339,8 @@ function TeamMenu({
               onClick={() => {
                 closeMenu();
                 void onReport().then((ok) => {
-                  if (!ok) return;
-                  setCopied("Details copied");
+                  // the menu has closed, so say either way
+                  setCopied(ok ? "Details copied" : "Couldn't copy");
                   setTimeout(() => setCopied(""), 2500);
                 });
               }}

@@ -19,6 +19,8 @@ test.beforeEach(async ({ context, page }) => {
   // the Squad pitch opens in 3D by default; most tests below drive the flat 2D tokens
   await page.addInitScript(() => {
     try { if (!localStorage.getItem("fpl-pitch-view")) localStorage.setItem("fpl-pitch-view", "2d"); } catch {}
+    // CI draws WebGL in software, slower than any phone: keep the 3D pitch up (see FrameBudget in stage.ts)
+    (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck = true;
   });
   // a recap with a week picker, so the Live tab always has its scrolling chip row;
   // unmocked, CI would reach FPL's real API and tests would depend on its data
@@ -259,6 +261,8 @@ test.describe("Squad and Scenarios tabs", () => {
   test("a phone that draws the 3D pitch too slowly gets the 2D pitch, says why, and can try 3D again", async ({ page }) => {
     await page.addInitScript(() => {
       try { localStorage.setItem("fpl-pitch-view", "3d"); } catch {}
+      // this test is the frame check's own: turn it back on
+      (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck = false;
       // a slow phone: every animation frame arrives 90 ms late (about 11 frames a second)
       const raf = window.requestAnimationFrame.bind(window);
       window.requestAnimationFrame = (cb) => raf(() => setTimeout(() => cb(performance.now()), 90));
@@ -964,10 +968,9 @@ test.describe("Team bar overflow menu", () => {
     await page.reload();
     const line = page.getByTestId("since-last-visit");
     await expect(line).toHaveText(/^Since your last visit: Now forecasting GW\d+/);
-    // and it is not repeated on the visit after
+    // a reload of the same build keeps it (it compares with the build before, not with itself)
     await page.reload();
-    await expect(page.getByRole("tab", { name: /^Team$/ })).toBeVisible();
-    await expect(page.getByTestId("since-last-visit")).toHaveCount(0);
+    await expect(page.getByTestId("since-last-visit")).toHaveText(/Now forecasting GW\d+/);
   });
 
   test("Report a problem copies what's on screen to the clipboard, and sends nothing", async ({ page, context }) => {

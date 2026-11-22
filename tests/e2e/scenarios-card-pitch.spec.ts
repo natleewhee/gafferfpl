@@ -18,6 +18,8 @@ test.beforeEach(async ({ context, page }) => {
       localStorage.setItem("fpl-pitch-view", "3d");
       localStorage.setItem("fpl-pitch-passing", "off");
     } catch {}
+    // CI draws WebGL in software, slower than any phone: keep the 3D pitch up (see FrameBudget in stage.ts)
+    (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck = true;
   });
   await page.route("**/api/live*", (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "no live data in tests" }) }),

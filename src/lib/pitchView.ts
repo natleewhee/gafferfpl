@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { readItem, writeItem } from "./storage";
 import { startIn2d } from "./device";
+import { clearFrameStats } from "./frameBudget";
 
 /* Whether the Squad pitch is drawn in 3D or as the flat 2D pitch. Remembered on
  * this device. With no choice saved, 3D is the default, except on a device that
@@ -37,7 +38,10 @@ export function usePitchView(): PitchView {
 
 export function setPitchView(view: PitchView) {
   writeItem(KEY, view);
-  if (view === "3d") unavailable3d = null; // choosing 3D again is a retry
+  if (view === "3d") {
+    unavailable3d = null; // choosing 3D again is a retry
+    clearFrameStats();
+  }
   listeners.forEach((l) => l());
 }
 

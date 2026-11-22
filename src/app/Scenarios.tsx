@@ -151,13 +151,13 @@ function TransferPairs({
   transfersIn: ScenarioPlayerRef[];
   transfersOut: ScenarioPlayerRef[];
   /** With these, a collapsed "Why?" lists up to 3 reasons per swap (see whyThisPick.ts). */
-  why?: { poolById: Map<number, PoolPlayer>; weeks: number[] };
+  why?: { poolById: Map<number, PoolPlayer>; weeks: number[]; span?: string };
 }) {
   const [open, setOpen] = useState(false);
   const pairs = pairTransfers({ transfersIn, transfersOut });
   if (pairs.length === 0) return <p className="text-xs text-ink-faint">No changes to your squad</p>;
   const reasons = why
-    ? pairs.map(({ out, in_ }) => transferReasons(why.poolById.get(out.id), why.poolById.get(in_.id), why.weeks))
+    ? pairs.map(({ out, in_ }) => transferReasons(why.poolById.get(out.id), why.poolById.get(in_.id), why.weeks, why.span))
     : [];
   const hasWhy = reasons.some((r) => r.length > 0);
   return (
@@ -648,7 +648,8 @@ function PlanWeekRow({
             <TransferPairs
               transfersIn={week.transfersIn}
               transfersOut={week.transfersOut}
-              why={{ poolById, weeks: [week.targetGw - forecastGw] }}
+              // a plan week is the transfer for that week alone: name it, it may not be the next one
+              why={{ poolById, weeks: [week.targetGw - forecastGw], span: `in GW${week.targetGw}` }}
             />
           )}
           <XiPitch

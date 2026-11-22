@@ -14,6 +14,10 @@ const fixture = (name: string) => readFileSync(join(__dirname, "fixtures", name)
 
 test.beforeEach(async ({ context, page }) => {
   await context.addCookies([{ name: "fpl_team_id", value: OWNER, url: ORIGIN }]);
+  // CI draws WebGL in software, slower than any phone: keep the 3D pitch up (see FrameBudget in stage.ts)
+  await page.addInitScript(() => {
+    (window as Window & { __gafferSkipFrameCheck?: boolean }).__gafferSkipFrameCheck = true;
+  });
   await page.route("**/api/live*", (route) =>
     route.request().url().includes("squad=1")
       ? route.fulfill({ status: 503, contentType: "application/json", body: "{}" })

@@ -48,3 +48,16 @@ test("a player bought since the last visit is not compared with anyone", () => {
   const now = snap({ builtAt: "x", players: { "1": ["Haaland", 7.2, false], "9": ["Gyökeres", 9.9, true] } });
   assert.deepEqual(changesSince(snap(), now), []);
 });
+
+test("reloading the same build keeps the line; the next build compares with this one", async () => {
+  const { visitChanges } = await import("@/lib/sinceLastVisit");
+  const v1 = snap();
+  const v2 = snap({ builtAt: "b2", captainId: 2 });
+  const first = visitChanges(v1, v2); // an older bare record from before this change
+  assert.deepEqual(first.changes, ["Captain pick now Saka (was Haaland)"]);
+  const reload = visitChanges(first.keep, v2);
+  assert.deepEqual(reload.changes, first.changes, "same build again (or React's second effect run in dev)");
+  const v3 = snap({ builtAt: "b3", captainId: 2 });
+  assert.deepEqual(visitChanges(reload.keep, v3).changes, [], "next build: compared with b2, nothing new");
+  assert.deepEqual(visitChanges(null, v1), { changes: [], keep: { prev: null, now: v1 } });
+});

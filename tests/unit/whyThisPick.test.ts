@@ -23,19 +23,19 @@ test("fixtures read as plain words, including blanks and doubles", () => {
 });
 
 test("the xP source names the two biggest scoring parts, never appearance points", () => {
-  assert.equal(sourceReason(player({}).components), "Most of his xP from goals 1.9 and assists 0.8");
+  assert.equal(sourceReason(player({}).components), "Biggest sources of his xP: goals 1.9 and assists 0.8");
   assert.equal(sourceReason(null), null);
 });
 
 test("form prefers real recent points, else FPL form, else nothing", () => {
-  assert.equal(formReason({ recentPoints: [9, null, 2, 11], form: 3 }), "Last 3 gameweeks: 9, 2, 11 points");
+  assert.equal(formReason({ recentPoints: [9, null, 2, 11], form: 3 }), "Last 4 gameweeks: 9, –, 2, 11 points", "a missed week is a dash, not skipped");
   assert.equal(formReason({ recentPoints: [], form: 6.2 }), "FPL form 6.2");
   assert.equal(formReason({ recentPoints: undefined, form: 0 }), null);
 });
 
 test("a captain gets at most three reasons, all from his own fields", () => {
   const r = captainReasons(player({ recentPoints: [8, 12, 3, 6, 2] }));
-  assert.deepEqual(r, ["Plays @NEW (FDR 3)", "Most of his xP from goals 1.9 and assists 0.8", "Last 5 gameweeks: 8, 12, 3, 6, 2 points"]);
+  assert.deepEqual(r, ["Plays @NEW (FDR 3)", "Biggest sources of his xP: goals 1.9 and assists 0.8", "Last 5 gameweeks: 8, 12, 3, 6, 2 points"]);
   assert.deepEqual(captainReasons(undefined), []);
 });
 
@@ -54,8 +54,9 @@ test("a transfer: xP gain over the horizon, a flag on the man out, easier fixtur
 });
 
 test("a one-week transfer with nothing else to say mentions the money", () => {
-  const out = player({ id: 2, webName: "Hall", perGameweek: [3], sellPrice: 5.0, opponents: [[{ team: "X", wasHome: true, fdrRating: 3 }]] });
-  const inn = player({ id: 3, webName: "Gabriel", perGameweek: [5.2], price: 6.1, opponents: [[{ team: "Y", wasHome: true, fdrRating: 3 }]] });
-  assert.deepEqual(transferReasons(out, inn, [0]), ["+2.2 xP this gameweek (5.2 vs 3.0)", "Costs £1.1m more than Hall sells for"]);
+  const out = player({ id: 2, webName: "Hall", perGameweek: [3, 3], price: 5.0, opponents: [[{ team: "X", wasHome: true, fdrRating: 3 }], []] });
+  const inn = player({ id: 3, webName: "Gabriel", perGameweek: [5.2, 1], price: 6.1, opponents: [[{ team: "Y", wasHome: true, fdrRating: 3 }], []] });
+  assert.deepEqual(transferReasons(out, inn, [0]), ["+2.2 xP this gameweek (5.2 vs 3.0)", "£1.1m dearer than Hall"]);
+  assert.equal(transferReasons(out, inn, [1], "in GW13")[0], "−2.0 xP in GW13 (1.0 vs 3.0)", "a later plan week is named");
   assert.deepEqual(transferReasons(undefined, inn, [0]), [], "no guessing when a player is missing from the pool");
 });
