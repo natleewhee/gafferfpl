@@ -140,7 +140,6 @@ def build_forecast_for_team(team_id: int) -> tuple[int, dict]:
     try:
         entry = _fpl_get(f"/entry/{team_id}/")
         history = _fpl_get(f"/entry/{team_id}/history/")
-        picks_payload = _fpl_get(f"/entry/{team_id}/event/{based_on_gw}/picks/")
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return 404, {"error": f"no FPL team found with ID {team_id}"}
@@ -148,10 +147,23 @@ def build_forecast_for_team(team_id: int) -> tuple[int, dict]:
     except urllib.error.URLError as exc:
         return 502, {"error": f"couldn't reach the FPL API: {exc}"}
 
+    no_picks = {"error": f"team {team_id} has no picks recorded for GW{based_on_gw} yet"}
+    try:
+        picks_payload = _fpl_get(f"/entry/{team_id}/event/{based_on_gw}/picks/")
+    except urllib.error.HTTPError as exc:
+        # The team exists (its entry loaded), so a 404 here means it didn't play that week:
+        # it joined after it. That is the 422 the app words as "check back after the next
+        # gameweek", not "FPL has no team with this ID".
+        if exc.code == 404:
+            return 422, no_picks
+        return 502, {"error": f"FPL API error: {exc}"}
+    except urllib.error.URLError as exc:
+        return 502, {"error": f"couldn't reach the FPL API: {exc}"}
+
     picks = picks_payload.get("picks", [])
     entry_history = picks_payload.get("entry_history", {})
     if not picks:
-        return 422, {"error": f"team {team_id} has no picks recorded for GW{based_on_gw} yet"}
+        return 422, no_picks
 
     def _fetch_gw_picks(gw: int) -> dict | None:
         # Best effort, inside a ~10s function budget: any failure (404, timeout,
