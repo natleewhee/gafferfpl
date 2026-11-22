@@ -10,7 +10,7 @@ name: Deploy smoke check
 #
 # Settings (repo Settings > Secrets and variables > Actions > Variables), both optional:
 #   PROD_URL        the production address, default https://fplforecast.vercel.app
-#   SMOKE_TEAM_IDS  team IDs to look up, separated by spaces, default the owner's 1168513
+#   SMOKE_TEAM_IDS  real team IDs that have a squad, separated by spaces, default the owner's 1168513
 
 on:
   deployment_status:

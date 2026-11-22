@@ -34,7 +34,8 @@ def test_a_healthy_site_passes():
     assert results[1][1].endswith("OK (GW12)")
 
 
-def test_unknown_team_and_no_squad_yet_count_as_the_app_answering():
+def test_not_found_or_no_squad_for_a_known_team_fails():
+    # The configured IDs are real teams with squads: "not found" means the lookup is broken.
     get = _site(
         dict(
             [
@@ -44,7 +45,8 @@ def test_unknown_team_and_no_squad_yet_count_as_the_app_answering():
             ]
         )
     )
-    assert all(ok for ok, _ in smoke.run("https://x.example", ["404", "422"], get=get, retries=0))
+    results = smoke.run("https://x.example", ["404", "422"], get=get, retries=0)
+    assert [ok for ok, _ in results] == [True, False, False]
 
 
 def test_server_errors_platform_pages_and_empty_forecasts_fail():

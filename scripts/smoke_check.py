@@ -8,10 +8,9 @@ Standard library only, so the workflow needs no install step.
 
 Exit code 0 when everything answered, 1 otherwise. Prints one line per check.
 
-What counts as "answered" for /api/forecast: a JSON body from our own
-function. 200 is a forecast. 404 (no such team) and 422 (no squad yet) are
-the app correctly answering about a real or unknown ID, so they pass too.
-Anything else (5xx, a timeout, an HTML error page from the platform) fails.
+The team IDs are ones known to be real, with a squad, so only a 200 with a
+squad passes. A 404 ("no such team") or 422 ("no squad yet") for one of them
+means a lookup is broken, as does a 5xx, a timeout or a platform HTML page.
 """
 
 from __future__ import annotations
@@ -24,7 +23,6 @@ import urllib.request
 
 # A guest build can take ~10 s on a cold start; the function's own limit is 30 s.
 TIMEOUT_S = 40
-ANSWERED = {200, 404, 422}
 USER_AGENT = "gafferfpl-smoke-check"
 
 
@@ -59,13 +57,11 @@ def check_forecast(base: str, team_id: str, get=_get) -> tuple[bool, str]:
         payload = json.loads(body)
     except ValueError:
         return False, f"{label}: HTTP {status}, not JSON (the platform answered, not the app)"
-    if status not in ANSWERED or not isinstance(payload, dict):
+    if status != 200 or not isinstance(payload, dict):
         return False, f"{label}: HTTP {status} {payload.get('error', '') if isinstance(payload, dict) else ''}".rstrip()
-    if status == 200 and not (payload.get("squad") or {}).get("players"):
+    if not (payload.get("squad") or {}).get("players"):
         return False, f"{label}: HTTP 200 but the forecast has no squad"
-    if status == 200:
-        return True, f"{label}: OK (GW{payload.get('targetGameweek')})"
-    return True, f"{label}: answered {status} ({payload.get('error', '')})"
+    return True, f"{label}: OK (GW{payload.get('targetGameweek')})"
 
 
 def run(base: str, team_ids: list[str], get=_get, retries: int = 1, wait_s: float = 20) -> list[tuple[bool, str]]:
