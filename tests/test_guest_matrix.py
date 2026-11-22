@@ -62,6 +62,7 @@ class Case:
     expect_ft: int = 1
     expect_from_gw9: bool = False  # the squad shown is GW9's (FPL restored it after a Free Hit)
     expect_chip_used: str | None = None
+    expect_hit: int = 0  # points the based-on week's transfers cost, as shown in last week's review
 
 
 # Free transfers at the GW11 deadline, by FPL's rules: the first week played is unlimited, 1 FT
@@ -102,6 +103,7 @@ CASES = [
         _history({**{gw: 1 for gw in range(2, 10)}, 10: 2}),
         entry_history_patch={"event_transfers": 2, "event_transfers_cost": 4},
         expect_ft=1,
+        expect_hit=4,
     ),
     # Joined in GW9 (unlimited week); 1 FT for GW10, none used -> 2 at GW11.
     Case("joined in gameweek 9", _history({}, first_gw=9), expect_ft=2),
@@ -121,17 +123,35 @@ CASES = [
 ]
 
 
+def _frozen(bootstrap: dict) -> dict:
+    """The bundled bootstrap as it was before GW11 finished. The nightly snapshot moves the real one
+    on (GW11 finished, then GW12...), which would change the week the build is based on and ask for
+    picks these cases don't serve. Freezing the finished flags keeps every case on GW10 -> GW11."""
+    frozen = copy.deepcopy(bootstrap)
+    for event in frozen.get("events", []):
+        done = event["id"] < TARGET_GW
+        event["finished"] = done
+        event["data_checked"] = done
+        event["is_current"] = event["id"] == TARGET_GW - 1
+        event["is_next"] = event["id"] == TARGET_GW
+    return frozen
+
+
 @pytest.fixture(scope="module")
 def pool_context():
     """The model context is the same for every team; build it once for the module."""
     compress_deploy_data.main()
     forecast_api._decompressed = False
     original = cf.DATA_DIR
-    forecast_api._ensure_data_decompressed()
-    bootstrap = cf.load_bootstrap()
-    ctx = forecast_api._get_pool_context(bootstrap, TARGET_GW)
-    yield ctx
+    with pytest.MonkeyPatch.context() as mp:
+        forecast_api._ensure_data_decompressed()
+        frozen = _frozen(cf.load_bootstrap())
+        mp.setattr(cf, "load_bootstrap", lambda *a, **k: frozen)
+        ctx = forecast_api._get_pool_context(frozen, TARGET_GW)
+        yield ctx
     forecast_api._decompressed = False
+    forecast_api._cached_pool_ctx = None
+    forecast_api._cached_pool_ctx_gw = None
     cf.DATA_DIR = original
 
 
@@ -198,6 +218,9 @@ def test_guest_matrix(monkeypatch, pinned_before_gw11, case: Case):
     _assert_legal_xi(payload)
     assert payload["squad"]["bank"] == round(expected_entry["bank"] / 10, 1)
     assert payload["scenarios"]["freeTransfers"]["value"] == case.expect_ft, payload["scenarios"]["freeTransfers"]
+    # FPL's free-transfer count after a hit is the same as after a normal week, so the hit itself is
+    # checked where the app shows it: last week's review.
+    assert payload["lastGameweek"]["transfersCost"] == case.expect_hit
     if case.expect_chip_used:
         used = {r["name"] for r in payload["chips"] if r["used"]}
         assert case.expect_chip_used in used
