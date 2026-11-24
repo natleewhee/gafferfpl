@@ -1467,11 +1467,16 @@ def build_personal_forecast(
     # gameweek's fixtures. Player identity (name/team/price) is carried once on
     # ``squad.players``; these rows are keyed by id.
     et_by_id = {c["id"]: (c["elementType"] or 4) for c in players}
+    new_to_fpl = {c["id"]: c for c in players if c.get("newToFpl")}
     upcoming = []
     for gw in range(target_gw, target_gw + ROLLING_WINDOW):
         gw_players = []
         for pid in squad_ids:
             if pid not in feature_frame.index:
+                # a player new to FPL (held_player_card): in every week's lineup at 0 xP, so the
+                # pitch, ticker and shortlist all show the 15 the manager holds
+                if new_to_fpl.get(pid):
+                    gw_players.append({"id": pid, "projectedPoints": 0.0, "provisional": True, "minutesRisk": False, "opponents": []})
                 continue
             d = model.project_detail(feature_frame.loc[pid], gw, ctx)
             gw_players.append(
@@ -1537,6 +1542,8 @@ def build_personal_forecast(
     squad_components = {}
     for pid in squad_ids:
         if pid not in feature_frame.index:
+            if new_to_fpl.get(pid):
+                squad_components[str(pid)] = new_to_fpl[pid]["breakdown"]["components"]
             continue
         detail = model.project_detail(feature_frame.loc[pid], target_gw, ctx)
         squad_components[str(pid)] = detail.get("components", {})

@@ -178,7 +178,8 @@ def _serve(monkeypatch, case: Case) -> tuple[list[int], dict]:
         old = next(e for e in cf.load_bootstrap()["elements"] if e["id"] == replaced)
         new_listing = {**old, "id": GONE_ID, "web_name": "Newman", "code": None}
         payloads["/bootstrap-static/"] = {"elements": [new_listing]}
-    forecast_api._fresh_elements.clear()
+    monkeypatch.setattr(forecast_api, "_fresh_elements", {})
+    monkeypatch.setattr(forecast_api, "_missed_until", {})
 
     def fake_get(path: str, timeout: float = 15) -> dict:
         if path in payloads:
@@ -229,7 +230,11 @@ def test_guest_matrix(monkeypatch, pinned_before_gw11, case: Case):
         assert new["webName"] == "Newman" and new["newToFpl"] is True
         assert new["projectedPoints"] == 0 and new["provisional"] is True
         assert GONE_ID not in payload["squad"]["startingXi"]
-        assert payload["upcoming"][0]["captainId"] != GONE_ID
+        # every week's lineup holds all 15 (the pitch, ticker and shortlist are drawn from these)
+        for week in payload["upcoming"]:
+            assert len(week["players"]) == 15 and GONE_ID in set(week["startingXi"]) | set(week["bench"]), week["gameweek"]
+            assert week["captainId"] != GONE_ID and week.get("viceCaptainId") != GONE_ID
+        assert str(GONE_ID) in payload["squadComponents"]
 
 
 def test_a_team_that_joined_after_the_last_finished_week_is_told_so(monkeypatch, pinned_before_gw11):
@@ -266,3 +271,20 @@ def test_if_fpls_listing_cant_be_fetched_the_build_still_succeeds(monkeypatch, p
     status, payload = forecast_api.build_forecast_for_team(GUEST)
     assert status == 200, payload
     assert len(payload["squad"]["players"]) == 14
+
+
+def test_a_failed_listing_fetch_is_not_retried_on_every_request(monkeypatch):
+    calls = []
+
+    def down(path: str, timeout: float = 15) -> dict:
+        calls.append(path)
+        raise forecast_api.urllib.error.URLError("down")
+
+    monkeypatch.setattr(forecast_api, "_fpl_get", down)
+    monkeypatch.setattr(forecast_api, "_fresh_elements", {})
+    monkeypatch.setattr(forecast_api, "_missed_until", {})
+    assert forecast_api._listings_for_unknown([GONE_ID], {}, now=0) == {}
+    assert forecast_api._listings_for_unknown([GONE_ID], {}, now=60) == {}
+    assert len(calls) == 1, "a miss is remembered"
+    forecast_api._listings_for_unknown([GONE_ID], {}, now=forecast_api.MISS_RETRY_S + 1)
+    assert len(calls) == 2, "and retried after the wait"
