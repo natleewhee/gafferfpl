@@ -32,7 +32,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 OWNER = 1168513
 GUEST = 424242
 TARGET_GW = 11
-GONE_ID = 999_999  # an id the bundled bootstrap doesn't list: a player who has left the league
+GONE_ID = 999_999  # an id the bundled bootstrap doesn't list: a player FPL added after the nightly build
 
 
 def _owner_picks(gw: int) -> dict:
@@ -107,19 +107,9 @@ CASES = [
     ),
     # Joined in GW9 (unlimited week); 1 FT for GW10, none used -> 2 at GW11.
     Case("joined in gameweek 9", _history({}, first_gw=9), expect_ft=2),
-    # One of the 15 is an id the bundled bootstrap doesn't list. FT as in the first case.
-    pytest.param(
-        Case("a player the bundled data doesn't list", _history({}), replace_pick=(None, GONE_ID), expect_ft=5),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "Known gap, found by this test: build_personal_forecast skips a squad id missing from the "
-                "feature frame, so the guest sees 14 players. FPL keeps departed players listed all season, "
-                "but a player newly added to FPL (January window) and bought before the nightly rebuild "
-                "would hit this. Left for Nat to decide on a fix."
-            ),
-        ),
-    ),
+    # One of the 15 is a player FPL added after the bundled data was built (the January window): the
+    # guest route looks him up in FPL's fresh listing and shows him at 0 xP. FT as in the first case.
+    Case("a player new to FPL since the nightly build", _history({}), replace_pick=(None, GONE_ID), expect_ft=5),
 ]
 
 
@@ -183,6 +173,13 @@ def _serve(monkeypatch, case: Case) -> tuple[list[int], dict]:
     }
     if case.previous_week_picks:
         payloads[f"/entry/{GUEST}/event/9/picks/"] = _owner_picks(9)
+    if case.replace_pick:
+        replaced = next(p for p in based["picks"] if p["position"] == 15)["element"]
+        old = next(e for e in cf.load_bootstrap()["elements"] if e["id"] == replaced)
+        new_listing = {**old, "id": GONE_ID, "web_name": "Newman", "code": None}
+        payloads["/bootstrap-static/"] = {"elements": [new_listing]}
+    monkeypatch.setattr(forecast_api, "_fresh_elements", {})
+    monkeypatch.setattr(forecast_api, "_missed_until", {})
 
     def fake_get(path: str, timeout: float = 15) -> dict:
         if path in payloads:
@@ -229,9 +226,15 @@ def test_guest_matrix(monkeypatch, pinned_before_gw11, case: Case):
         key = {"wildcard": "wildcard", "freehit": "freeHit"}[case.active_chip]
         assert payload["scenarios"]["chipsAvailable"][key] is False  # this half's chip is spent
     if case.replace_pick:
-        gone = next(p for p in payload["squad"]["players"] if p["id"] == GONE_ID)
-        assert gone["projectedPoints"] == 0
+        new = next(p for p in payload["squad"]["players"] if p["id"] == GONE_ID)
+        assert new["webName"] == "Newman" and new["newToFpl"] is True
+        assert new["projectedPoints"] == 0 and new["provisional"] is True
         assert GONE_ID not in payload["squad"]["startingXi"]
+        # every week's lineup holds all 15 (the pitch, ticker and shortlist are drawn from these)
+        for week in payload["upcoming"]:
+            assert len(week["players"]) == 15 and GONE_ID in set(week["startingXi"]) | set(week["bench"]), week["gameweek"]
+            assert week["captainId"] != GONE_ID and week.get("viceCaptainId") != GONE_ID
+        assert str(GONE_ID) in payload["squadComponents"]
 
 
 def test_a_team_that_joined_after_the_last_finished_week_is_told_so(monkeypatch, pinned_before_gw11):
@@ -251,3 +254,37 @@ def test_a_team_that_joined_after_the_last_finished_week_is_told_so(monkeypatch,
     # FPL answers 404 for the picks of a week the team didn't play. The team exists, so this
     # must be the 422 ("no squad recorded yet"), not the 404 ("FPL has no team with ID ...").
     assert status == 422, payload
+
+
+def test_if_fpls_listing_cant_be_fetched_the_build_still_succeeds(monkeypatch, pinned_before_gw11):
+    """Best effort: no fresh listing means the new player can't be shown (14 players), not a failed forecast."""
+    case = next(c for c in CASES if c.replace_pick)
+    _serve(monkeypatch, case)
+    served = forecast_api._fpl_get
+
+    def no_bootstrap(path: str, timeout: float = 15) -> dict:
+        if path == "/bootstrap-static/":
+            raise forecast_api.urllib.error.URLError("timed out")
+        return served(path, timeout)
+
+    monkeypatch.setattr(forecast_api, "_fpl_get", no_bootstrap)
+    status, payload = forecast_api.build_forecast_for_team(GUEST)
+    assert status == 200, payload
+    assert len(payload["squad"]["players"]) == 14
+
+
+def test_a_failed_listing_fetch_is_not_retried_on_every_request(monkeypatch):
+    calls = []
+
+    def down(path: str, timeout: float = 15) -> dict:
+        calls.append(path)
+        raise forecast_api.urllib.error.URLError("down")
+
+    monkeypatch.setattr(forecast_api, "_fpl_get", down)
+    monkeypatch.setattr(forecast_api, "_fresh_elements", {})
+    monkeypatch.setattr(forecast_api, "_missed_until", {})
+    assert forecast_api._listings_for_unknown([GONE_ID], {}, now=0) == {}
+    assert forecast_api._listings_for_unknown([GONE_ID], {}, now=60) == {}
+    assert len(calls) == 1, "a miss is remembered"
+    forecast_api._listings_for_unknown([GONE_ID], {}, now=forecast_api.MISS_RETRY_S + 1)
+    assert len(calls) == 2, "and retried after the wait"

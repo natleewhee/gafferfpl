@@ -589,6 +589,32 @@ def _player_card(
     }
 
 
+def held_player_card(pid: int, elements_by_id: dict, extra_elements: dict, teams_by_id: dict) -> dict | None:
+    """A squad card for a player the model has no data for: 0 xP, provisional (so never captain),
+    flagged ``newToFpl`` so the app can say why. None when no FPL listing names him."""
+    listing = elements_by_id if pid in elements_by_id else extra_elements
+    if pid not in listing or listing[pid].get("element_type") not in POSITIONS:
+        return None
+    card = _player_card(pid, listing, teams_by_id)
+    zero = {k: 0.0 for k in ("appearance", "goals", "assists", "cleanSheet", "bonus", "saves", "cards", "goalsConceded", "defensiveContribution")}
+    card.update(
+        sellPrice=card["price"],
+        projectedPoints=0.0,
+        windowPoints=0.0,
+        provisional=True,
+        rateSource="none",
+        minutesRisk=False,
+        opponents=[],
+        newToFpl=True,
+        breakdown={
+            "availabilityMultiplier": 1.0, "components": zero, "expectedMinutes": 0.0, "minutesRisk": False,
+            "opponents": [], "points": 0.0, "provisional": True, "rateSource": "none",
+        },
+        floorCeiling=None,
+    )
+    return card
+
+
 def par_margin(
     current: list[dict], events: list[dict], min_gameweeks: int = PAR_MARGIN_MIN_GAMEWEEKS
 ) -> tuple[float, bool]:
@@ -1225,6 +1251,7 @@ def build_personal_forecast(
     squad_picks: list[dict] | None = None,
     squad_entry_history: dict | None = None,
     free_hit_reverted_from: int | None = None,
+    extra_elements: dict | None = None,
 ) -> dict:
     """The team-specific half: given one manager's held squad (and their own
     season history, for the par-score/rank calibration), build the full
@@ -1261,6 +1288,13 @@ def build_personal_forecast(
     squad_window_total = 0.0
     for pid in squad_ids:
         if pid not in feature_frame.index:
+            # Not in the model's data: a player FPL added after the bundled data was built (the
+            # January window), bought before tonight's rebuild. He is still one of the 15, so show
+            # him, at 0 xP and never captain, from FPL's fresh listing (``extra_elements``) when
+            # the caller has it. Without any listing at all there is nothing to show him with.
+            held = held_player_card(pid, elements_by_id, extra_elements or {}, teams_by_id)
+            if held is not None:
+                players.append(held)
             continue
         detail = model.project_detail(feature_frame.loc[pid], target_gw, ctx)
         card = _player_card(pid, elements_by_id, teams_by_id, form_by_id)
@@ -1433,11 +1467,16 @@ def build_personal_forecast(
     # gameweek's fixtures. Player identity (name/team/price) is carried once on
     # ``squad.players``; these rows are keyed by id.
     et_by_id = {c["id"]: (c["elementType"] or 4) for c in players}
+    new_to_fpl = {c["id"]: c for c in players if c.get("newToFpl")}
     upcoming = []
     for gw in range(target_gw, target_gw + ROLLING_WINDOW):
         gw_players = []
         for pid in squad_ids:
             if pid not in feature_frame.index:
+                # a player new to FPL (held_player_card): in every week's lineup at 0 xP, so the
+                # pitch, ticker and shortlist all show the 15 the manager holds
+                if new_to_fpl.get(pid):
+                    gw_players.append({"id": pid, "projectedPoints": 0.0, "provisional": True, "minutesRisk": False, "opponents": []})
                 continue
             d = model.project_detail(feature_frame.loc[pid], gw, ctx)
             gw_players.append(
@@ -1503,6 +1542,8 @@ def build_personal_forecast(
     squad_components = {}
     for pid in squad_ids:
         if pid not in feature_frame.index:
+            if new_to_fpl.get(pid):
+                squad_components[str(pid)] = new_to_fpl[pid]["breakdown"]["components"]
             continue
         detail = model.project_detail(feature_frame.loc[pid], target_gw, ctx)
         squad_components[str(pid)] = detail.get("components", {})

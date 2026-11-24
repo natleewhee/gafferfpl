@@ -27,10 +27,23 @@ const data = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const DESCRIPTION = "Your FPL captain pick, transfer plans and live rank, on your phone. Type your team ID and go.";
+
+/* Absolute URLs for the share card (opengraph-image.tsx). On Vercel production that is the fixed
+ * production domain; on previews the preview's own address; locally, localhost. */
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_ENV === "production"
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "GafferFPL",
-  description: "Personal FPL squad, captain and transfer decisions.",
+  description: DESCRIPTION,
   appleWebApp: { capable: true, title: "GafferFPL", statusBarStyle: "black" },
+  openGraph: { type: "website", siteName: "GafferFPL", title: "GafferFPL", description: DESCRIPTION, url: "/" },
+  twitter: { card: "summary_large_image", title: "GafferFPL", description: DESCRIPTION },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

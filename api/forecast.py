@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import time
 import os
 import shutil
 import sys
@@ -204,6 +205,7 @@ def build_forecast_for_team(team_id: int) -> tuple[int, dict]:
     squad_ids = [p["element"] for p in squad_picks]
 
     pool_ctx = _get_pool_context(bootstrap, target_gw)
+    extra_elements = _listings_for_unknown(squad_ids, pool_ctx["elementsById"])
     forecast = compute_forecast.build_personal_forecast(
         bootstrap,
         pool_ctx,
@@ -220,10 +222,41 @@ def build_forecast_for_team(team_id: int) -> tuple[int, dict]:
         free_hit_reverted_from=(
             reverted_from if reverted_from is not None else (squad_gw if squad_gw != based_on_gw else None)
         ),
+        extra_elements=extra_elements,
     )
     forecast["teamName"] = entry.get("name")
     forecast["managerName"] = f"{entry.get('player_first_name', '')} {entry.get('player_last_name', '')}".strip()
     return 200, forecast
+
+
+# FPL's own current listing for players the bundled data doesn't know, fetched only when a guest
+# holds one, and kept for this warm instance: only the ids asked for, not all ~800. A failed fetch,
+# or an id FPL's listing lacks too, is remembered for MISS_RETRY_S so a busy spell doesn't refetch
+# the whole 1.8 MB listing on every request. A kept listing's price and news aren't refreshed until
+# the instance restarts; the next nightly build replaces it with real data anyway.
+_fresh_elements: dict[int, dict] = {}
+_missed_until: dict[int, float] = {}
+MISS_RETRY_S = 600
+
+
+def _listings_for_unknown(squad_ids: list[int], known: dict, now: float | None = None) -> dict[int, dict]:
+    """FPL's listing for each squad id the bundled bootstrap lacks: a player added after the
+    nightly build (the January window). One fetch of bootstrap-static, best effort: if it fails,
+    the build carries on and that player is left out, as before."""
+    now = time.monotonic() if now is None else now
+    unknown = [pid for pid in squad_ids if pid not in known]
+    wanted = [pid for pid in unknown if pid not in _fresh_elements and _missed_until.get(pid, 0) <= now]
+    if wanted:
+        try:
+            fresh = {e["id"]: e for e in _fpl_get("/bootstrap-static/", timeout=6).get("elements", [])}
+        except Exception:  # noqa: BLE001 -- best effort inside the function's time budget
+            fresh = {}
+        for pid in wanted:
+            if pid in fresh:
+                _fresh_elements[pid] = fresh[pid]
+            else:
+                _missed_until[pid] = now + MISS_RETRY_S
+    return {pid: _fresh_elements[pid] for pid in unknown if pid in _fresh_elements}
 
 
 class handler(BaseHTTPRequestHandler):
