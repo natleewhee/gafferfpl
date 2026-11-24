@@ -415,7 +415,9 @@ test.describe("Saved transfers say where they have got to", () => {
       const posted = JSON.parse(route.request().postData() ?? "{}");
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ ok: true, rebuild: "started", overrides: { basedOnGw: posted.basedOnGw, transfers: [{ out: posted.outId, in: posted.inId }] } }),
+        // savedAt as the real route stamps it: once the forecast has a cutoff (built from the live week's
+        // squad), a transfer with no time counts as from before it and no longer applies
+        body: JSON.stringify({ ok: true, rebuild: "started", overrides: { basedOnGw: posted.basedOnGw, transfers: [{ out: posted.outId, in: posted.inId, savedAt: new Date().toISOString() }] } }),
       });
     });
     await mockLive(page, { current: "a" });
@@ -475,7 +477,7 @@ test.describe("Replace a player on the pitch", () => {
         body: JSON.stringify({
           ok: true,
           rebuild: "started",
-          overrides: { basedOnGw: posted!.basedOnGw, transfers: [{ out: posted!.outId, in: posted!.inId }] },
+          overrides: { basedOnGw: posted!.basedOnGw, transfers: [{ out: posted!.outId, in: posted!.inId, savedAt: new Date().toISOString() }] },
         }),
       });
     });
@@ -549,12 +551,16 @@ test.describe("Rebuild now", () => {
   });
 });
 
-function latestDeadline(): string {
+function latestForecast() {
   const dir = join(__dirname, "..", "..", "data", "forecast");
   const newest = readdirSync(dir)
     .filter((f) => /^gw\d+\.json$/.test(f))
     .sort((a, b) => Number(b.match(/\d+/)![0]) - Number(a.match(/\d+/)![0]))[0];
-  return JSON.parse(readFileSync(join(dir, newest), "utf8")).deadlineTime;
+  return JSON.parse(readFileSync(join(dir, newest), "utf8"));
+}
+
+function latestDeadline(): string {
+  return latestForecast().deadlineTime;
 }
 
 test.describe("Deadline banner", () => {
@@ -1206,15 +1212,18 @@ test.describe("Screens say things once", () => {
     // scoped to the checklist panel: page-wide text (team bar, manager names) varies by environment
     const checklist = page.locator(".panel").filter({ has: page.getByRole("heading", { name: /this week.s decisions/i }) });
     await expect(checklist.getByText("Chips", { exact: true })).toHaveCount(1);
-    // the owner at GW11: wildcard and Bench Boost are spent until GW20, no manager chip
-    await expect(checklist.getByText(/chips? left \(Free Hit, Triple Captain\); use by GW19 \(9 GWs incl\. this one\)/)).toBeVisible();
+    // the owner: wildcard and Bench Boost are spent until GW20, no manager chip; the weeks left follow
+    // the committed forecast's gameweek, which moves on with every nightly snapshot
+    const weeksLeft = 19 - latestForecast().targetGameweek + 1;
+    await expect(checklist.getByText(new RegExp(`chips? left \\(Free Hit, Triple Captain\\); use by GW19 \\(${weeksLeft} GWs? incl\\. this one\\)`))).toBeVisible();
     await expect(checklist.getByText(/Wildcard, Bench Boost used, next from GW20/)).toBeVisible();
     await expect(checklist.getByText(/manager chip/i)).toHaveCount(0);
   });
 
   test("a guest's chips come from their own forecast, not the owner's", async ({ page, context }) => {
     await context.clearCookies();
-    const forecast = JSON.parse(readFileSync(join(__dirname, "..", "..", "data", "forecast", "gw11.json"), "utf8"));
+    // the newest committed forecast, matching the clock below (an older week's forecast reads as out of date)
+    const forecast = latestForecast();
     forecast.chips = forecast.chips.map((c: { name: string; window: { start: number } }) =>
       c.name === "bboost" && c.window.start === 1 ? { ...c, used: false, availableNow: true } : c);
     forecast.teamName = "Guest FC";
