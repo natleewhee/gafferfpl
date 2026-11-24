@@ -132,6 +132,9 @@ export type PlayerCard = {
   floorCeiling?: FloorCeiling | null;
   availability?: Availability;
   priceWatch?: PriceWatch | null;
+  /** FPL added him after the model's data was built (a January signing): shown at 0 xP until the
+   * nightly rebuild (compute_forecast.held_player_card). */
+  newToFpl?: boolean;
   code?: number | null; // FPL photo code (headshot filename)
   recentPoints?: (number | null)[]; // last few gameweeks' points, oldest first; null = didn't play
 };

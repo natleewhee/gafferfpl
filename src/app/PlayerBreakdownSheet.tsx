@@ -99,6 +99,13 @@ export default function PlayerBreakdownSheet({
         </div>
       </div>
 
+      {player.newToFpl && (
+        <p className="mt-3 text-xs text-ink-soft" data-testid="new-to-fpl">
+          New to FPL since last night&apos;s update, so there&apos;s no forecast for him yet. He&apos;s shown at 0 xP
+          and won&apos;t be picked as captain until the next nightly rebuild.
+        </p>
+      )}
+
       {components ? (
         <div className="mt-4 space-y-2">
           {positiveTotal > 0 && (

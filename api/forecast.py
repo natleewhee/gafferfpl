@@ -204,6 +204,7 @@ def build_forecast_for_team(team_id: int) -> tuple[int, dict]:
     squad_ids = [p["element"] for p in squad_picks]
 
     pool_ctx = _get_pool_context(bootstrap, target_gw)
+    extra_elements = _listings_for_unknown(squad_ids, pool_ctx["elementsById"])
     forecast = compute_forecast.build_personal_forecast(
         bootstrap,
         pool_ctx,
@@ -220,10 +221,32 @@ def build_forecast_for_team(team_id: int) -> tuple[int, dict]:
         free_hit_reverted_from=(
             reverted_from if reverted_from is not None else (squad_gw if squad_gw != based_on_gw else None)
         ),
+        extra_elements=extra_elements,
     )
     forecast["teamName"] = entry.get("name")
     forecast["managerName"] = f"{entry.get('player_first_name', '')} {entry.get('player_last_name', '')}".strip()
     return 200, forecast
+
+
+# FPL's own current listing, fetched only when a guest holds a player the bundled data doesn't
+# know, and kept for this warm instance (players are only ever added mid-season, never renumbered).
+_fresh_elements: dict[int, dict] = {}
+
+
+def _listings_for_unknown(squad_ids: list[int], known: dict) -> dict[int, dict]:
+    """FPL's listing for each squad id the bundled bootstrap lacks: a player added after the
+    nightly build (the January window). One fetch of bootstrap-static, best effort: if it fails,
+    the build carries on and that player is left out, as before."""
+    unknown = [pid for pid in squad_ids if pid not in known]
+    if not unknown:
+        return {}
+    if any(pid not in _fresh_elements for pid in unknown):
+        try:
+            fresh = _fpl_get("/bootstrap-static/", timeout=6)
+            _fresh_elements.update({e["id"]: e for e in fresh.get("elements", [])})
+        except Exception:  # noqa: BLE001 -- best effort inside the function's time budget
+            return {pid: _fresh_elements[pid] for pid in unknown if pid in _fresh_elements}
+    return {pid: _fresh_elements[pid] for pid in unknown if pid in _fresh_elements}
 
 
 class handler(BaseHTTPRequestHandler):
