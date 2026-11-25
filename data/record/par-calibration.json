@@ -62,6 +62,13 @@
       "marginProvisional": false,
       "rankMovement": "dropped",
       "verdict": "red"
+    },
+    {
+      "gameweek": 11,
+      "hit": true,
+      "marginProvisional": false,
+      "rankMovement": "held",
+      "verdict": "amber"
     }
   ],
   "gameweeksIncluded": [
@@ -73,13 +80,14 @@
     7,
     8,
     9,
-    10
+    10,
+    11
   ],
   "summary": {
-    "gameweeksScored": 9,
-    "hitRate": 0.889,
+    "gameweeksScored": 10,
+    "hitRate": 0.9,
     "hitRateByVerdict": {
-      "amber": 0.5,
+      "amber": 0.667,
       "green": 1.0,
       "red": 1.0
     }
