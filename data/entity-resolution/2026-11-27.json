@@ -1,6 +1,6 @@
 {
-  "bootstrapDate": "2026-11-13",
-  "generatedAt": "2026-11-13T10:44:08.929789+00:00",
+  "bootstrapDate": "2026-11-27",
+  "generatedAt": "2026-11-27T11:55:15.228878+00:00",
   "resolved": {
     "1": {
       "bySeason": {
@@ -3416,6 +3416,12 @@
       },
       "webName": "Rayan"
     },
+    "673": {
+      "bySeason": {
+        "2025-26": 555
+      },
+      "webName": "Browne"
+    },
     "68": {
       "bySeason": {
         "2023-24": 86,
@@ -3663,13 +3669,13 @@
       "webName": "Milambo"
     }
   },
-  "resolvedCount": 517,
+  "resolvedCount": 518,
   "seasonsAttempted": [
     "2025-26",
     "2024-25",
     "2023-24"
   ],
-  "totalPlayers": 672,
+  "totalPlayers": 674,
   "unresolved": [
     {
       "ambiguousIn": [],
@@ -4160,6 +4166,13 @@
       "matchedSeasons": [],
       "normalizedName": "david affengruber",
       "webName": "Affengruber"
+    },
+    {
+      "ambiguousIn": [],
+      "currentId": 674,
+      "matchedSeasons": [],
+      "normalizedName": "dino kaiser",
+      "webName": "Kaiser"
     },
     {
       "ambiguousIn": [],
@@ -4757,5 +4770,5 @@
       "webName": "J.Angulo"
     }
   ],
-  "unresolvedCount": 155
+  "unresolvedCount": 156
 }
