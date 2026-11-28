@@ -35,3 +35,17 @@ test("every date and time is said in SGT, 24-hour, one style", async () => {
   assert.equal(sgDayTime(null), "—");
   assert.equal(sgDateTime("nonsense"), "—");
 });
+
+test("a kickoff label says the day unless it is today, in SGT", async () => {
+  const { kickoffShort } = await import("@/lib/time");
+  // Saturday 28 Nov, 21:48 SGT (13:48 UTC), as on Nat's screen
+  const now = Date.parse("2026-11-28T13:48:00Z");
+  assert.equal(kickoffShort("2026-11-28T14:05:00Z", now), "22:05", "later today: the time alone");
+  assert.equal(kickoffShort("2026-11-28T16:30:00Z", now), "Tmr 00:30", "00:30 SGT is after midnight: tomorrow");
+  assert.equal(kickoffShort("2026-11-29T12:00:00Z", now), "Tmr 20:00");
+  assert.equal(kickoffShort("2026-11-30T17:30:00Z", now), "Tue 01:30", "the day after tomorrow and later this week: the weekday");
+  assert.equal(kickoffShort("2026-12-06T12:00:00Z", now), "6 Dec 20:00", "a week or more away: the date");
+  assert.equal(kickoffShort("2026-11-28T15:59:00Z", now), "23:59");
+  assert.equal(kickoffShort("2026-11-28T16:00:00Z", now), "Tmr 00:00", "midnight SGT is 16:00 UTC");
+  assert.equal(kickoffShort(null, now), "—");
+});

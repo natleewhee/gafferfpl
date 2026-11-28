@@ -3,7 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 import type { BenchCoverItem, TrackerRow } from "@/lib/liveBlend";
 import { fdrColor } from "@/lib/teamColors";
-import { eventCounts, parseOpponent, sgKickoff } from "@/lib/liveLabels";
+import { eventCounts, parseOpponent } from "@/lib/liveLabels";
+import { kickoffShort } from "@/lib/time";
 import { PitchScene, type PitchMood } from "./PitchScene";
 import { Halo } from "./Shirt";
 import { FaceToggle, PlayerFace } from "./PlayerFace";
@@ -41,7 +42,7 @@ function tone(row: TrackerRow): Tone {
 }
 
 /** What sits under the name: minutes, FT, or the kickoff time. */
-function shortStatus(row: TrackerRow): string {
+function shortStatus(row: TrackerRow, nowMs: number): string {
   switch (row.status) {
     case "playing":
       return `${row.minutes}'`;
@@ -52,7 +53,7 @@ function shortStatus(row: TrackerRow): string {
     case "didNotPlay":
       return "DNP";
     case "notStarted":
-      return sgKickoff(row.kickoffTime);
+      return kickoffShort(row.kickoffTime, nowMs);
   }
 }
 
@@ -101,8 +102,10 @@ function Token({
   popped,
   floats,
   onSelect,
+  nowMs,
 }: {
   row: TrackerRow;
+  nowMs: number;
   bench?: boolean;
   heat: boolean;
   share: number;
@@ -210,7 +213,7 @@ function Token({
                 : "text-ink-faint"
         }`}
       >
-        {heat ? `${Math.round(share * 100)}%` : shortStatus(row)}
+        {heat ? `${Math.round(share * 100)}%` : shortStatus(row, nowMs)}
       </span>
       {t !== "pending" && t !== "dnp" && <XpBar pts={pts} xp={row.expectedXp} final={t === "done" || t === "off"} />}
       {t === "pending" && opp && (
@@ -239,6 +242,10 @@ export default function LivePitch({
   polledAt?: number;
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  // "today" for kickoff labels: the live poll's time (it refreshes every minute or so), or the
+  // moment this pitch first drew when there is no poll yet
+  const [mountedAt] = useState(() => Date.now());
+  const nowMs = polledAt || mountedAt;
   const [heat, setHeat] = useState(false);
   const view = useShownPitchView();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -288,7 +295,8 @@ export default function LivePitch({
       position: r.position,
       team: r.team ?? "",
       code: r.code,
-      sub: t === "pending" ? shortStatus(r).replace(/^[A-Za-z]{3} /, "") : t === "done" ? `${pts.toFixed(0)}` : `${pts.toFixed(0)} \u00B7 ${shortStatus(r)}`, // full time: just the points, to leave room for the icons // a kickoff shows the time only; the day is in the "still to play" card
+      // a kickoff says the day unless it is today: "22:05", "Tmr 00:30", "Mon 01:30" (SGT)
+      sub: t === "pending" ? kickoffShort(r.kickoffTime, nowMs) : t === "done" ? `${pts.toFixed(0)}` : `${pts.toFixed(0)} \u00B7 ${shortStatus(r, nowMs)}`, // full time: just the points, to leave room for the icons
       subTone: t === "live" ? "accent" : t === "done" && pts >= HAUL ? "warn" : t === "done" ? "accent" : "faint",
       role: r.isArmband ? "C" : r.isViceCaptain ? "V" : null,
       dim: t === "dnp" ? 0.5 : t === "off" ? 0.62 : t === "pending" ? 0.72 : 1,
@@ -346,6 +354,7 @@ export default function LivePitch({
             <div key={i} className="flex justify-center gap-x-1 gap-y-4">
               {line.map((r) => (
                 <Token
+                  nowMs={nowMs}
                   key={r.id}
                   row={r}
                   heat={heat}
@@ -371,6 +380,7 @@ export default function LivePitch({
           <div className="flex gap-x-1 gap-y-3">
             {benched.map((r) => (
               <Token
+                nowMs={nowMs}
                 key={r.id}
                 row={r}
                 bench

@@ -149,6 +149,22 @@ test.describe("Live tab", () => {
     await expect(scene.locator(".live-glow-shirt")).not.toHaveCount(0);
   });
 
+  test("a player still to play shows his kickoff with the day when it isn't today", async ({ page }) => {
+    // Saturday 10 Oct, 21:48 SGT; Porro kicks off Sunday 23:30 SGT (fixture live-a)
+    await page.clock.install({ time: Date.parse("2026-10-10T13:48:00Z") });
+    await mockLive(page, { current: "a" });
+    await open(page);
+    const scene = await visibleScene(page);
+    await expect(scene.getByRole("button", { name: /^Porro/ })).toContainText("Tmr 23:30");
+    // on the day itself it is the time alone
+    await page.clock.setSystemTime(Date.parse("2026-10-11T13:48:00Z"));
+    await page.reload();
+    await page.getByRole("button", { name: /^Van Dijk,/ }).waitFor();
+    const porro = (await visibleScene(page)).getByRole("button", { name: /^Porro/ });
+    await expect(porro).toContainText("23:30");
+    await expect(porro).not.toContainText("Tmr");
+  });
+
   test("lists what is still to come and who is due bonus", async ({ page }) => {
     await mockLive(page, { current: "a" });
     await open(page);
