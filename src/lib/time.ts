@@ -62,6 +62,26 @@ export function sgDayTime(iso: string | null): string {
   return `${d.toLocaleDateString("en-GB", { weekday: "short", timeZone: SGT })} ${clockTime(iso)}`;
 }
 
+/** The calendar day in SGT as days since 1970, so two times can be compared by day. */
+function sgDayNumber(ms: number): number {
+  const [y, m, d] = new Date(ms).toLocaleDateString("en-CA", { timeZone: SGT }).split("-").map(Number);
+  return Date.UTC(y, m - 1, d) / 86_400_000;
+}
+
+/** A kickoff short enough for a pitch tag, with the day when it isn't today (SGT):
+ * "22:05" today, "Tmr 00:30" tomorrow, "Mon 01:30" later this week, "6 Dec 20:00" beyond.
+ * A 00:30 kickoff is after midnight, so it reads as tomorrow, which is what it is. */
+export function kickoffShort(iso: string | null, nowMs: number): string {
+  const d = valid(iso);
+  if (!d) return "—";
+  const days = sgDayNumber(d.getTime()) - sgDayNumber(nowMs);
+  const time = clockTime(iso);
+  if (days <= 0) return time;
+  if (days === 1) return `Tmr ${time}`;
+  if (days < 7) return `${d.toLocaleDateString("en-GB", { weekday: "short", timeZone: SGT })} ${time}`;
+  return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: SGT })} ${time}`;
+}
+
 /** Date and time in SGT, like "13 Nov, 11:00 SGT", for when something was built or saved. */
 export function sgDateTime(iso: string | null): string {
   const d = valid(iso);
